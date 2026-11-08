@@ -9,16 +9,16 @@
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:#0f1226;overflow:hidden;font-family:"Jua","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif}
-#wrap{position:absolute;left:50%;top:50%;width:360px;height:680px;display:flex;flex-direction:column;background:#1b1f3b;user-select:none;-webkit-user-select:none}
+#wrap{position:absolute;left:50%;top:50%;width:360px;height:720px;display:flex;flex-direction:column;background:#1b1f3b;user-select:none;-webkit-user-select:none}
 #hud{height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;color:#fff;font-size:16px}
 #timer{font-size:20px;color:#ffd84d}
 #cv{width:360px;height:480px;display:block;background:#fbfbf8;touch-action:none}
-#panel{height:160px;padding:8px;display:flex;flex-direction:column;gap:6px}
+#panel{flex:1;min-height:200px;padding:8px;display:flex;flex-direction:column;gap:6px}
 #units{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:1}
-.ub{flex:1;border:0;border-radius:12px;background:#fbfbf8;color:#1b1f3b;font:inherit;font-size:14px;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:7px;cursor:pointer}
+.ub{flex:1;border:0;border-radius:12px;background:#fbfbf8;color:#1b1f3b;font:inherit;font-size:13px;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:7px;cursor:pointer}
 .ub .ic{font-size:24px;line-height:1}
 .tx{display:flex;flex-direction:column;align-items:flex-start;line-height:1.2}
-.ub small{font:inherit;font-size:12px;color:#6b6f8d}
+.ub small{font:inherit;font-size:11px;color:#6b6f8d}
 .ub:active:not(:disabled){transform:scale(.96)}
 .ub:disabled{opacity:.35;cursor:default}
 #go{height:34px;border:0;border-radius:10px;background:#ffd84d;color:#1b1f3b;font:inherit;font-size:15px;cursor:pointer}
@@ -57,17 +57,25 @@ const CFG = {
   BATTLE: 60,          // 전투 시간(초)
   START_COIN: 30,      // 시작 코인
   INCOME_EVERY: 5,     // 전투 중 코인 지급 간격(초)
+  CURSE_MOVE: 0.7,     // 저주 장판 안 이동속도 배율 (30% 감소)
+  CURSE_ATK: 0.5,      // 저주 장판 안 공격속도 배율 (50% 감소)
   SPEED_SCALE: 3,      // 이동속도 배율 (1로 하면 적어둔 숫자 그대로, 더 느려요)
   UNITS: {
     knight:   { name: '기사',       icon: '🛡️', cost: 1, hp: 100, atk: 50,  spd: 10, rate: 1,   range: 0,   r: 11, trail: 5, ai: 'melee' },
     archer:   { name: '궁수',       icon: '🏹', cost: 2, hp: 80,  atk: 70,  spd: 8,  rate: 1.2, range: 100, r: 11, arrow: 4, ai: 'ranged' },
     launcher: { name: '페인트런처', icon: '🪨', cost: 4, hp: 200, atk: 100, spd: 0,  rate: 3,   range: 250, r: 14, boom: 15, ai: 'artillery' },
     // 런치킨: 공격 없이 랜덤하게 뛰어다니며 칠함
-    chicken:  { name: '런치킨',     icon: '🐔', cost: 3, hp: 70,  atk: 0,   spd: 13, rate: 0,   range: 0,   r: 9,  trail: 5, ai: 'wander' },
+    chicken:  { name: '런치킨',     icon: '🐔', cost: 3, hp: 70,  atk: 0,   spd: 15, rate: 0,   range: 0,   r: 9,  trail: 5, ai: 'wander' },
     // 타이탄: 거대한 탱커 (trail = 지나간 길에 칠하는 굵기)
     titan:    { name: '타이탄',     icon: '🪓', cost: 4, hp: 500, atk: 200, spd: 7,  rate: 2.2, range: 0,   r: 20, trail: 5, ai: 'melee' },
     // 소방관: atk = 초당 피해, cone = 부채꼴 각도(도), turn = 방향 전환 시간(초), dots = 초당 칠하는 점 개수, dot = 점 크기
-    fire:     { name: '소방관',     icon: '🧯', cost: 3, hp: 150, atk: 40,  spd: 8,  rate: 0,   range: 90,  r: 11, cone: 40, turn: 1, dots: 100, dot: 3, ai: 'flame' }
+    fire:     { name: '소방관',     icon: '🧯', cost: 3, hp: 150, atk: 40,  spd: 8,  rate: 0,   range: 90,  r: 11, cone: 40, turn: 1, dots: 100, dot: 3, ai: 'flame' },
+    // 암살자: tp = 순간이동 반경, tpPaint = 도착 지점 칠하는 반경, lateTp = 전투 중 소환해도 순간이동할지(false면 전투 시작 때 있던 암살자만)
+    assassin: { name: '암살자',     icon: '🥷', cost: 2, hp: 70,  atk: 150, spd: 8,  rate: 2,   range: 0,   r: 11, tp: 200, tpPaint: 20, lateTp: true, ai: 'melee' },
+    // 마녀: zone = 저주 장판 반경(칠하는 반경도 같음), zoneTime = 장판 지속시간(초)
+    witch:    { name: '마녀',       icon: '🧹', cost: 3, hp: 100, atk: 50,  spd: 9,  rate: 2,   range: 90,  r: 11, zone: 25, zoneTime: 4, ai: 'witch' },
+    // 마법사: zap = 번개 맞은 곳 칠하는 반경, stun = 경직 시간(초)
+    mage:     { name: '마법사',     icon: '🧙', cost: 4, hp: 100, atk: 250, spd: 8,  rate: 2.6, range: 120, r: 11, zap: 15, stun: 0.5, ai: 'mage' }
   }
 };
 
@@ -88,7 +96,7 @@ let S, last = 0, clock = 0;
    ==================================================== */
 function newGame() {
   S = { phase: 'prep', t: CFG.PREP, coin: [CFG.START_COIN, CFG.START_COIN],
-        units: [], shots: [], fx: [], owner: new Uint8Array(GW * GH), incomeT: 0, drag: null };
+        units: [], shots: [], fx: [], zones: [], owner: new Uint8Array(GW * GH), incomeT: 0, drag: null };
   while (aiBuyOne()) {}            // AI가 준비 시간에 코인을 다 씀
   $('over').hidden = true;
 }
@@ -96,6 +104,7 @@ function newGame() {
 function startBattle() {
   if (S.phase !== 'prep') return;
   S.phase = 'battle'; S.t = CFG.BATTLE; S.drag = null;
+  S.coin = [0, 0]; S.incomeT = 0;                  // 못 쓴 코인은 사라지고, 전투는 0코인에서 시작
 }
 
 function endBattle() {
@@ -114,7 +123,7 @@ function endBattle() {
 function spawn(team, type, x, y) {
   const d = CFG.UNITS[type];
   S.units.push({ team, type, d, x, y, hp: d.hp, max: d.hp, cd: 0, hit: 0,
-    face: team === 1 ? -Math.PI / 2 : Math.PI / 2, turn: 0, wx: x, wy: y, wt: 0, acc: 0, spray: false, seed: Math.random() * TAU });
+    face: team === 1 ? -Math.PI / 2 : Math.PI / 2, turn: 0, wx: x, wy: y, wt: 0, acc: 0, spray: false, born: S.phase, seed: Math.random() * TAU });
 }
 
 function pickSpot(team, type, yMin, yMax) {
@@ -138,13 +147,13 @@ function buy(type) {
 function aiBuyOne() {
   const names = Object.keys(CFG.UNITS).filter(k => CFG.UNITS[k].cost <= S.coin[1]);
   if (!names.length) return false;
-  const w = { knight: 5, archer: 3, launcher: 1.5, chicken: 1.5, titan: 1.5, fire: 2 };
+  const w = { knight: 5, archer: 3, launcher: 1.5, chicken: 1.5, titan: 1.5, fire: 2, assassin: 1, witch: 2, mage: 1.5 };
   let sum = 0; names.forEach(k => sum += w[k]);
   let r = Math.random() * sum, pick = names[0];
   for (const k of names) { r -= w[k]; if (r <= 0) { pick = k; break; } }
   S.coin[1] -= CFG.UNITS[pick].cost;
   const prep = S.phase === 'prep';
-  const [x, y] = (pick === 'launcher' && prep) ? pickSpot(2, pick, 15, 70)
+  const [x, y] = (['launcher', 'witch', 'mage'].includes(pick) && prep) ? pickSpot(2, pick, 15, 70)
                : pickSpot(2, pick, prep ? 40 : 18, prep ? MID - 24 : 40);
   spawn(2, pick, x, y);
   return true;
@@ -177,7 +186,7 @@ function near(u) {
 
 function moveTo(u, tx, ty, dt) {
   const dx = tx - u.x, dy = ty - u.y, d = Math.hypot(dx, dy) || 1;
-  const s = Math.min(u.d.spd * CFG.SPEED_SCALE * dt, d);
+  const s = Math.min(u.d.spd * CFG.SPEED_SCALE * (u.cursed ? CFG.CURSE_MOVE : 1) * dt, d);
   u.x += dx / d * s; u.y += dy / d * s;
 }
 
@@ -185,16 +194,20 @@ const forward = (u, dt) => moveTo(u, u.x, u.team === 1 ? 0 : H, dt);
 function hurt(e, dmg) { e.hp -= dmg; e.hit = .12; }
 
 function think(u, dt) {
-  u.cd -= dt; if (u.hit > 0) u.hit -= dt;
-  const D = u.d, [e, d] = near(u);
+  u.cd -= dt * (u.cursed ? CFG.CURSE_ATK : 1); if (u.hit > 0) u.hit -= dt;
+  if (u.stun > 0) { u.stun -= dt; u.spray = false; return; }      // 경직 중에는 아무것도 못 함
+  const D = u.d;
+  if (D.tp && !u.tpDone) teleport(u);
+  const [e, d] = near(u);
   if (D.ai === 'wander') return wander(u, dt);
   if (D.ai === 'flame') return flame(u, dt, e, d);
+  if (D.ai === 'witch' || D.ai === 'mage') return cast(u, dt, e, d);
 
   if (D.ai === 'melee') {                       // 기사: 가장 가까운 적에게 달려가 칼질, 지나간 길을 칠함
     if (e && d <= D.r + e.d.r + 3) { if (u.cd <= 0) { hurt(e, D.atk); u.cd = D.rate; } }
     else if (e) moveTo(u, e.x, e.y, dt);
     else forward(u, dt);
-    paint(u.x, u.y, D.trail, u.team);
+    if (D.trail) paint(u.x, u.y, D.trail, u.team);
 
   } else if (u.type === 'archer') {                // 궁수: 사거리 안이면 발사, 아니면 적을 향해 전진
     if (e && d <= D.range) {
@@ -211,6 +224,41 @@ function think(u, dt) {
     }
     if (b) { S.shots.push({ k: 'ball', team: u.team, sx: u.x, sy: u.y, x: u.x, y: u.y, tx: b.x, ty: b.y, t: 0, z: 0, dmg: D.atk }); u.cd = D.rate; }
   }
+}
+
+function teleport(u) {                             // 암살자: 처음 한 번, 반경 안에서 가장 먼 적에게 순간이동
+  u.tpDone = true;
+  if (u.born === 'battle' && !u.d.lateTp) return;
+  let b = null, bd = -1;
+  for (const e of S.units) {
+    if (e.team === u.team || e.hp <= 0) continue;
+    const dd = Math.hypot(e.x - u.x, e.y - u.y);
+    if (dd <= u.d.tp && dd > bd) { bd = dd; b = e; }
+  }
+  if (!b) return;                                  // 반경 안에 적이 없으면 취소
+  S.fx.push({ x: u.x, y: u.y, t: 0, team: u.team, r: 12 });
+  u.x = b.x; u.y = b.y;
+  S.fx.push({ x: u.x, y: u.y, t: 0, team: u.team, r: 12 });
+  paint(u.x, u.y, u.d.tpPaint, u.team);
+}
+
+function cast(u, dt, e, d) {                       // 마녀/마법사: 사거리 안이면 멈춰서 시전, 아니면 적을 향해 이동
+  const D = u.d;
+  if (e && d <= D.range) {
+    if (u.cd <= 0) {
+      u.cd = D.rate;
+      if (D.ai === 'witch') S.shots.push({ k: 'orb', team: u.team, x: u.x, y: u.y, tgt: e, tx: e.x, ty: e.y, dmg: D.atk });
+      else strike(u, e);
+    }
+  } else if (e) moveTo(u, e.x, e.y, dt);
+  else forward(u, dt);
+}
+
+function strike(u, e) {                            // 마법사: 번개 한 방 (단일 피해 + 짧은 경직)
+  hurt(e, u.d.atk);
+  e.stun = Math.max(e.stun || 0, u.d.stun);
+  paint(e.x, e.y, u.d.zap, u.team);
+  S.fx.push({ x: e.x, y: e.y, t: 0, team: u.team, r: u.d.zap, bolt: true });
 }
 
 function wander(u, dt) {                           // 런치킨: 아레나 아무 곳이나 정해서 뛰어다니며 칠함
@@ -241,9 +289,9 @@ function flame(u, dt, e, d) {                      // 소방관: 부채꼴 분�
     if (t.team === u.team || t.hp <= 0) continue;
     const dx = t.x - u.x, dy = t.y - u.y, dd = Math.hypot(dx, dy) || 1;
     if (dd - t.d.r > D.range) continue;
-    if (angDiff(Math.atan2(dy, dx), u.face) <= HALF + Math.atan2(t.d.r, dd)) t.hp -= D.atk * dt;
+    if (angDiff(Math.atan2(dy, dx), u.face) <= HALF + Math.atan2(t.d.r, dd)) t.hp -= D.atk * dt * (u.cursed ? CFG.CURSE_ATK : 1);
   }
-  u.acc += D.dots * dt;                            // 부채꼴 안에 도트로 페인트 흩뿌리기
+  u.acc += D.dots * dt * (u.cursed ? CFG.CURSE_ATK : 1);                            // 부채꼴 안에 도트로 페인트 흩뿌리기
   while (u.acc >= 1) {
     u.acc--;
     const rr = D.range * Math.sqrt(Math.random()), aa = u.face + (Math.random() - .5) * 2 * HALF;
@@ -268,7 +316,18 @@ function separate() {                              // 캐릭터끼리 겹치지 
 
 function stepShots(dt) {
   for (const s of S.shots) {
-    if (s.k === 'arrow') {
+    if (s.k === 'orb') {                           // 마녀의 저주구: 맞은 상대만 피해, 떨어진 곳에 저주 장판
+      if (s.tgt.hp > 0) { s.tx = s.tgt.x; s.ty = s.tgt.y; }
+      const dx = s.tx - s.x, dy = s.ty - s.y, d = Math.hypot(dx, dy) || 1, st = 150 * dt;
+      if (d <= st + s.tgt.d.r * .6) {
+        if (s.tgt.hp > 0) hurt(s.tgt, s.dmg);
+        const D = CFG.UNITS.witch;
+        paint(s.tx, s.ty, D.zone, s.team);
+        S.zones.push({ x: s.tx, y: s.ty, r: D.zone, team: s.team, t: D.zoneTime });
+        S.fx.push({ x: s.tx, y: s.ty, t: 0, team: s.team, r: D.zone * .5 });
+        s.dead = true;
+      } else { s.x += dx / d * st; s.y += dy / d * st; }
+    } else if (s.k === 'arrow') {
       if (s.tgt.hp > 0) { s.tx = s.tgt.x; s.ty = s.tgt.y; }
       const dx = s.tx - s.x, dy = s.ty - s.y, d = Math.hypot(dx, dy), st = 220 * dt;
       s.a = Math.atan2(dy, dx);
@@ -301,6 +360,9 @@ function update(dt) {
     S.incomeT -= CFG.INCOME_EVERY; S.coin[0]++; S.coin[1]++;
     if (Math.random() < .6) aiBuyOne();
   }
+  S.zones.forEach(z => z.t -= dt);                 // 저주 장판: 시간 지나면 사라지고, 안에 있는 적은 저주 상태
+  S.zones = S.zones.filter(z => z.t > 0);
+  for (const u of S.units) u.cursed = S.zones.some(z => z.team !== u.team && Math.hypot(u.x - z.x, u.y - z.y) <= z.r);
   for (const u of S.units) if (u.hp > 0) think(u, dt);
   separate();
   stepShots(dt);
@@ -388,6 +450,57 @@ function drawFire(u, c) {
   ctx.fillStyle = '#dc2626'; ctx.beginPath(); ctx.arc(x, y - r * .55, 2.6, 0, TAU); ctx.fill();
 }
 
+function drawAssassin(u, c) {
+  const x = u.x, y = u.y, r = u.d.r;
+  ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); ctx.stroke();
+  ctx.save(); ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.clip();
+  ctx.fillStyle = '#111827'; ctx.fillRect(x - r, y - 7, r * 2, 4); ctx.fillRect(x - r, y + 2, r * 2, r);   // 머리띠, 복면
+  ctx.restore();
+  ctx.fillStyle = '#fff';
+  [-3.5, 3.5].forEach(o => { ctx.beginPath(); ctx.ellipse(x + o, y - .5, 2.4, 1.6, 0, 0, TAU); ctx.fill(); });
+  ctx.fillStyle = '#111'; [-3.5, 3.5].forEach(o => { ctx.beginPath(); ctx.arc(x + o, y - .5, .9, 0, TAU); ctx.fill(); });
+  ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.stroke();
+  ctx.lineCap = 'round'; ctx.strokeStyle = '#111827'; ctx.lineWidth = 3;   // 펄럭이는 머리띠 끈
+  const f = Math.sin(clock * 9 + u.seed) * 2;
+  ctx.beginPath(); ctx.moveTo(x - r + 1, y - 5); ctx.lineTo(x - r - 7, y - 9 + f); ctx.moveTo(x - r + 1, y - 5); ctx.lineTo(x - r - 8, y - 3 - f); ctx.stroke();
+  ctx.strokeStyle = '#d1d5db'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(x + r - 2, y + 4); ctx.lineTo(x + r + 8, y - 6); ctx.stroke();   // 쿠나이
+  ctx.strokeStyle = '#111827'; ctx.beginPath(); ctx.moveTo(x + r - 3, y + 5); ctx.lineTo(x + r, y + 2); ctx.stroke();
+}
+
+function drawWitch(u, c) {
+  const x = u.x, y = u.y - 3 + Math.sin(clock * 5 + u.seed) * 1.5, r = u.d.r;
+  ctx.lineCap = 'round';                           // 빗자루
+  ctx.strokeStyle = '#8b5a2b'; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(x - r - 4, y + r - 1); ctx.lineTo(x + r + 8, y + r - 3); ctx.stroke();
+  ctx.fillStyle = '#eab308'; ctx.strokeStyle = '#1b1f3b'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(x - r - 3, y + r - 1); ctx.lineTo(x - r - 14, y + r - 6); ctx.lineTo(x - r - 14, y + r + 5); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.lineCap = 'butt'; ctx.lineWidth = 2;
+  ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.beginPath(); ctx.ellipse(x - r * .35, y - r * .1, r * .25, r * .16, -.6, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#111'; [-3.5, 3.5].forEach(o => { ctx.beginPath(); ctx.arc(x + o, y + 3, 1.7, 0, TAU); ctx.fill(); });
+  ctx.fillStyle = '#4c1d95';                       // 마녀 모자
+  ctx.beginPath(); ctx.ellipse(x, y - r * .55, r + 5, 3.5, 0, 0, TAU); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x - r * .65, y - r * .55); ctx.lineTo(x + 3, y - r - 15); ctx.lineTo(x + r * .65, y - r * .55); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#facc15'; ctx.fillRect(x - r * .5, y - r * .55 - 4, r, 3);
+}
+
+function drawMage(u, c) {
+  const x = u.x, y = u.y, r = u.d.r;
+  ctx.lineCap = 'round'; ctx.strokeStyle = '#92400e'; ctx.lineWidth = 3;   // 번개 지팡이
+  ctx.beginPath(); ctx.moveTo(x + r + 4, y + r + 6); ctx.lineTo(x + r + 4, y - r + 1); ctx.stroke();
+  ctx.fillStyle = '#fde047'; ctx.strokeStyle = '#1b1f3b'; ctx.lineWidth = 1.5; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(x + r + 8, y - r - 11); ctx.lineTo(x + r + 1, y - r - 2); ctx.lineTo(x + r + 5, y - r - 2);
+  ctx.lineTo(x + r + 1, y - r + 7); ctx.lineTo(x + r + 10, y - r - 4); ctx.lineTo(x + r + 6, y - r - 4); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.lineCap = 'butt'; ctx.lineWidth = 2;
+  ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.beginPath(); ctx.ellipse(x - r * .35, y - r * .4, r * .28, r * .18, -.6, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#111'; [-3.5, 3.5].forEach(o => { ctx.beginPath(); ctx.arc(x + o, y - 1, 1.7, 0, TAU); ctx.fill(); });
+  ctx.fillStyle = '#f9fafb'; ctx.lineWidth = 1;    // 덥수룩한 눈썹
+  [-3.5, 3.5].forEach(o => { ctx.beginPath(); ctx.ellipse(x + o, y - 4.5, 3.2, 1.5, 0, 0, TAU); ctx.fill(); ctx.stroke(); });
+  ctx.lineWidth = 2;                               // 희고 긴 수염
+  ctx.beginPath(); ctx.moveTo(x - r + 2, y + 2); ctx.quadraticCurveTo(x - 6, y + r + 4, x, y + r + 12);
+  ctx.quadraticCurveTo(x + 6, y + r + 4, x + r - 2, y + 2); ctx.quadraticCurveTo(x, y + 6, x - r + 2, y + 2); ctx.closePath(); ctx.fill(); ctx.stroke();
+}
+
 function drawUnit(u) {
   const D = u.d, x = u.x, y = u.y, r = D.r, c = u.hit > 0 ? '#ffffff' : HEX[u.team];
   ctx.save();
@@ -395,6 +508,9 @@ function drawUnit(u) {
   if (u.type === 'titan') drawTitan(u, c);
   else if (u.type === 'chicken') drawChicken(u, c);
   else if (u.type === 'fire') drawFire(u, c);
+  else if (u.type === 'assassin') drawAssassin(u, c);
+  else if (u.type === 'witch') drawWitch(u, c);
+  else if (u.type === 'mage') drawMage(u, c);
   else if (u.type === 'launcher') {
     ctx.fillStyle = '#8b5a2b'; ctx.fillRect(x - r, y + 2, r * 2, 7); ctx.strokeRect(x - r, y + 2, r * 2, 7);
     ctx.fillStyle = '#4b5563';
@@ -416,6 +532,11 @@ function drawUnit(u) {
       ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x + r - 1, y - 9); ctx.lineTo(x + r - 1, y + 9); ctx.stroke();
     }
   }
+  if (u.cursed) { ctx.strokeStyle = '#7c3aed'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, r + 3, 0, TAU); ctx.stroke(); }   // 저주 표시
+  if (u.stun > 0) {                                // 경직 표시 (머리 위에 빙글빙글)
+    ctx.fillStyle = '#facc15';
+    for (let k = 0; k < 3; k++) { const a = clock * 8 + k * TAU / 3; ctx.beginPath(); ctx.arc(x + Math.cos(a) * 8, y - r - 15 + Math.sin(a) * 3, 2, 0, TAU); ctx.fill(); }
+  }
   const bw = Math.max(26, r * 2), by = y - r - 9;                    // 체력바
   ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x - bw / 2, by, bw, 4);
   ctx.fillStyle = '#22c55e'; ctx.fillRect(x - bw / 2, by, bw * Math.max(0, u.hp / u.max), 4);
@@ -428,6 +549,15 @@ function draw() {
   ctx.fillStyle = 'rgba(47,107,255,.06)'; ctx.fillRect(0, MID, W, MID);
   renderPaint();
 
+  for (const z of S.zones) {                       // 저주 장판
+    const a = Math.min(1, z.t);
+    ctx.globalAlpha = .35 * a; ctx.fillStyle = '#7c3aed';
+    ctx.beginPath(); ctx.arc(z.x, z.y, z.r, 0, TAU); ctx.fill();
+    ctx.globalAlpha = .8 * a; ctx.strokeStyle = '#4c1d95'; ctx.lineWidth = 2; ctx.setLineDash([5, 4]); ctx.lineDashOffset = -clock * 12;
+    ctx.beginPath(); ctx.arc(z.x, z.y, z.r, 0, TAU); ctx.stroke();
+    ctx.setLineDash([]); ctx.lineDashOffset = 0; ctx.globalAlpha = 1;
+  }
+
   ctx.setLineDash([6, 6]); ctx.strokeStyle = 'rgba(27,31,59,.35)'; ctx.lineWidth = 1.5;
   ctx.beginPath(); ctx.moveTo(0, MID); ctx.lineTo(W, MID); ctx.stroke(); ctx.setLineDash([]);
 
@@ -435,7 +565,11 @@ function draw() {
   for (const u of list) drawUnit(u);
 
   for (const s of S.shots) {
-    if (s.k === 'arrow') {
+    if (s.k === 'orb') {
+      ctx.fillStyle = '#a855f7'; ctx.strokeStyle = '#1b1f3b'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(s.x, s.y, 6, 0, TAU); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.beginPath(); ctx.arc(s.x - 2, s.y - 2, 1.8, 0, TAU); ctx.fill();
+    } else if (s.k === 'arrow') {
       ctx.strokeStyle = '#1b1f3b'; ctx.lineWidth = 2; ctx.beginPath();
       ctx.moveTo(s.x - Math.cos(s.a) * 9, s.y - Math.sin(s.a) * 9); ctx.lineTo(s.x, s.y); ctx.stroke();
     } else {
@@ -446,7 +580,15 @@ function draw() {
   }
   for (const f of S.fx) {
     ctx.globalAlpha = 1 - f.t / .35; ctx.strokeStyle = HEX[f.team]; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(f.x, f.y, CFG.UNITS.launcher.boom * (1 + f.t * 4), 0, TAU); ctx.stroke(); ctx.globalAlpha = 1;
+    ctx.beginPath(); ctx.arc(f.x, f.y, (f.r || CFG.UNITS.launcher.boom) * (1 + f.t * 4), 0, TAU); ctx.stroke();
+    if (f.bolt) {                                  // 마법사의 번개
+      ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(f.x, f.y - 140);
+      for (let k = 1; k < 8; k++) ctx.lineTo(f.x + (Math.random() - .5) * 24, f.y - 140 + k * 17.5);
+      ctx.lineTo(f.x, f.y);
+      ctx.strokeStyle = '#fde047'; ctx.lineWidth = 5; ctx.stroke();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
   }
 
   if (S.phase === 'prep') {                         // 준비 중에는 상대 진영이 가려짐
@@ -466,7 +608,7 @@ function ui() {
   document.querySelectorAll('.ub').forEach(b => { b.disabled = S.phase === 'over' || S.coin[0] < CFG.UNITS[b.dataset.t].cost; });
   const go = $('go');
   go.disabled = S.phase !== 'prep';
-  go.textContent = S.phase === 'prep' ? '준비 완료 (바로 전투 시작)' : S.phase === 'battle' ? `전투 중 · ${CFG.INCOME_EVERY}초마다 +1코인` : '전투 종료';
+  go.textContent = S.phase === 'prep' ? '전투 시작 (남은 코인은 사라져요)' : S.phase === 'battle' ? `전투 중 · ${CFG.INCOME_EVERY}초마다 +1코인` : '전투 종료';
 }
 
 for (const k in CFG.UNITS) {
@@ -502,7 +644,8 @@ cv.addEventListener('pointerup', endDrag);
 cv.addEventListener('pointercancel', endDrag);
 
 function fit() {
-  const s = Math.min(innerWidth / 360, innerHeight / 680);
+  const s = Math.min(innerWidth / 360, innerHeight / 720);
+  $('wrap').style.height = Math.max(720, innerHeight / s) + 'px';     // 화면이 세로로 더 길면 아래쪽을 늘려서 꽉 채움
   $('wrap').style.transform = `translate(-50%,-50%) scale(${s})`;
 }
 addEventListener('resize', fit);
