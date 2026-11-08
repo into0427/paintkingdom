@@ -71,11 +71,11 @@ const CFG = {
     // 소방관: atk = 초당 피해, cone = 부채꼴 각도(도), turn = 방향 전환 시간(초), dots = 초당 칠하는 점 개수, dot = 점 크기
     fire:     { name: '소방관',     icon: '🧯', cost: 3, hp: 150, atk: 40,  spd: 8,  rate: 0,   range: 90,  r: 11, cone: 40, turn: 1, dots: 100, dot: 3, ai: 'flame' },
     // 암살자: tp = 순간이동 반경, tpPaint = 도착 지점 칠하는 반경, lateTp = 전투 중 소환해도 순간이동할지(false면 전투 시작 때 있던 암살자만)
-    assassin: { name: '암살자',     icon: '🥷', cost: 2, hp: 70,  atk: 150, spd: 8,  rate: 2,   range: 0,   r: 11, tp: 200, tpPaint: 20, lateTp: true, ai: 'melee' },
+    assassin: { name: '암살자',     icon: '🥷', cost: 2, hp: 70,  atk: 80, spd: 8,  rate: 2,   range: 0,   r: 11, tp: 200, tpPaint: 20, lateTp: true, ai: 'melee' },
     // 마녀: zone = 저주 장판 반경(칠하는 반경도 같음), zoneTime = 장판 지속시간(초)
     witch:    { name: '마녀',       icon: '🧹', cost: 3, hp: 100, atk: 50,  spd: 9,  rate: 2,   range: 90,  r: 11, zone: 25, zoneTime: 4, ai: 'witch' },
     // 마법사: zap = 번개 맞은 곳 칠하는 반경, stun = 경직 시간(초)
-    mage:     { name: '마법사',     icon: '🧙', cost: 4, hp: 100, atk: 250, spd: 8,  rate: 2.6, range: 120, r: 11, zap: 15, stun: 0.5, ai: 'mage' }
+    mage:     { name: '마법사',     icon: '🧙', cost: 4, hp: 100, atk: 250, spd: 8,  rate: 3, range: 120, r: 11, zap: 15, stun: 0.5, ai: 'mage' }
   }
 };
 
