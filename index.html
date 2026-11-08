@@ -9,11 +9,11 @@
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:#0f1226;overflow:hidden;font-family:"Jua","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif}
-#wrap{position:absolute;left:50%;top:50%;width:360px;height:720px;display:flex;flex-direction:column;background:#1b1f3b;user-select:none;-webkit-user-select:none}
+#wrap{position:absolute;left:50%;top:50%;width:360px;height:770px;display:flex;flex-direction:column;background:#1b1f3b;user-select:none;-webkit-user-select:none}
 #hud{height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;color:#fff;font-size:16px}
 #timer{font-size:20px;color:#ffd84d}
 #cv{width:360px;height:480px;display:block;background:#fbfbf8;touch-action:none}
-#panel{flex:1;min-height:200px;padding:8px;display:flex;flex-direction:column;gap:6px}
+#panel{flex:1;min-height:250px;padding:8px;display:flex;flex-direction:column;gap:6px}
 #units{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:1}
 .ub{flex:1;border:0;border-radius:12px;background:#fbfbf8;color:#1b1f3b;font:inherit;font-size:13px;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:7px;cursor:pointer}
 .ub .ic{font-size:24px;line-height:1}
@@ -59,6 +59,7 @@ const CFG = {
   INCOME_EVERY: 5,     // 전투 중 코인 지급 간격(초)
   CURSE_MOVE: 0.7,     // 저주 장판 안 이동속도 배율 (30% 감소)
   CURSE_ATK: 0.5,      // 저주 장판 안 공격속도 배율 (50% 감소)
+  SPAWN_SHIELD: 4,     // 전투 중 소환한 캐릭터의 무적 시간(초) (타겟에서도 제외됨)
   SPEED_SCALE: 3,      // 이동속도 배율 (1로 하면 적어둔 숫자 그대로, 더 느려요)
   UNITS: {
     knight:   { name: '기사',       icon: '🛡️', cost: 1, hp: 100, atk: 50,  spd: 10, rate: 1,   range: 0,   r: 11, trail: 5, ai: 'melee' },
@@ -71,11 +72,17 @@ const CFG = {
     // 소방관: atk = 초당 피해, cone = 부채꼴 각도(도), turn = 방향 전환 시간(초), dots = 초당 칠하는 점 개수, dot = 점 크기
     fire:     { name: '소방관',     icon: '🧯', cost: 3, hp: 150, atk: 40,  spd: 8,  rate: 0,   range: 90,  r: 11, cone: 40, turn: 1, dots: 100, dot: 3, ai: 'flame' },
     // 암살자: tp = 순간이동 반경, tpPaint = 도착 지점 칠하는 반경, lateTp = 전투 중 소환해도 순간이동할지(false면 전투 시작 때 있던 암살자만)
-    assassin: { name: '암살자',     icon: '🥷', cost: 2, hp: 70,  atk: 80, spd: 8,  rate: 2,   range: 0,   r: 11, tp: 200, tpPaint: 20, lateTp: true, ai: 'melee' },
+    assassin: { name: '암살자',     icon: '🥷', cost: 2, hp: 70,  atk: 80,  spd: 10, rate: 1.8, range: 0,   r: 11, tp: 200, tpPaint: 20, lateTp: true, ai: 'melee' },
     // 마녀: zone = 저주 장판 반경(칠하는 반경도 같음), zoneTime = 장판 지속시간(초)
     witch:    { name: '마녀',       icon: '🧹', cost: 3, hp: 100, atk: 50,  spd: 9,  rate: 2,   range: 90,  r: 11, zone: 25, zoneTime: 4, ai: 'witch' },
     // 마법사: zap = 번개 맞은 곳 칠하는 반경, stun = 경직 시간(초)
-    mage:     { name: '마법사',     icon: '🧙', cost: 4, hp: 100, atk: 250, spd: 8,  rate: 3, range: 120, r: 11, zap: 15, stun: 0.5, ai: 'mage' }
+    mage:     { name: '마법사',     icon: '🧙', cost: 4, hp: 100, atk: 250, spd: 8,  rate: 3,   range: 120, r: 11, zap: 15, stun: 0.5, ai: 'mage' },
+    // 캐슬: 건물. 반경(range) 안에 적이 있으면 rate초마다 summon 캐릭터를 자기 위치에 소환
+    castle:   { name: '캐슬',       icon: '🏰', cost: 5, hp: 200, atk: 0,   spd: 0,  rate: 6,   range: 120, r: 18, summon: 'knight', ai: 'castle' },
+    // 아르마딜로: shield = 쉴드 체력, meet = 구르기 시작 거리, rollSpd = 구르는 속도, chain = 연쇄 반경, cool = 구르기 후 쿨타임(초)
+    arma:     { name: '아르마딜로', icon: '🌀', cost: 3, hp: 100, shield: 100, atk: 50, spd: 8, rate: 0, range: 0, r: 11, trail: 5, meet: 30, rollSpd: 15, chain: 25, cool: 2, ai: 'arma' },
+    // 꽃순이: splash = 꽃 이펙트 반경, heal = 아군 회복 비율, dots = 걸을 때 초당 흩뿌리는 점 개수, scatter = 흩뿌리는 범위, dot = 점 크기
+    flower:   { name: '꽃순이',     icon: '🌸', cost: 4, hp: 120, atk: 40,  spd: 9,  rate: 1.8, range: 70,  r: 11, splash: 35, heal: 0.1, dots: 30, scatter: 12, dot: 3, ai: 'flower' }
   }
 };
 
@@ -120,10 +127,10 @@ function endBattle() {
 /* ====================================================
    캐릭터 소환
    ==================================================== */
-function spawn(team, type, x, y) {
+function spawn(team, type, x, y, free) {
   const d = CFG.UNITS[type];
   S.units.push({ team, type, d, x, y, hp: d.hp, max: d.hp, cd: 0, hit: 0,
-    face: team === 1 ? -Math.PI / 2 : Math.PI / 2, turn: 0, wx: x, wy: y, wt: 0, acc: 0, spray: false, born: S.phase, seed: Math.random() * TAU });
+    face: team === 1 ? -Math.PI / 2 : Math.PI / 2, turn: 0, wx: x, wy: y, wt: 0, acc: 0, spray: false, born: S.phase, shield: d.shield || 0, inv: (S.phase === 'battle' && !free) ? CFG.SPAWN_SHIELD : 0, rs: 'walk', hits: [], seed: Math.random() * TAU });
 }
 
 function pickSpot(team, type, yMin, yMax) {
@@ -147,13 +154,13 @@ function buy(type) {
 function aiBuyOne() {
   const names = Object.keys(CFG.UNITS).filter(k => CFG.UNITS[k].cost <= S.coin[1]);
   if (!names.length) return false;
-  const w = { knight: 5, archer: 3, launcher: 1.5, chicken: 1.5, titan: 1.5, fire: 2, assassin: 1, witch: 2, mage: 1.5 };
+  const w = { knight: 5, archer: 3, launcher: 1.5, chicken: 1.5, titan: 1.5, fire: 2, assassin: 1, witch: 2, mage: 1.5, castle: 1, arma: 2, flower: 1.5 };
   let sum = 0; names.forEach(k => sum += w[k]);
   let r = Math.random() * sum, pick = names[0];
   for (const k of names) { r -= w[k]; if (r <= 0) { pick = k; break; } }
   S.coin[1] -= CFG.UNITS[pick].cost;
   const prep = S.phase === 'prep';
-  const [x, y] = (['launcher', 'witch', 'mage'].includes(pick) && prep) ? pickSpot(2, pick, 15, 70)
+  const [x, y] = (['launcher', 'witch', 'mage', 'flower'].includes(pick) && prep) ? pickSpot(2, pick, 15, 70)
                : pickSpot(2, pick, prep ? 40 : 18, prep ? MID - 24 : 40);
   spawn(2, pick, x, y);
   return true;
@@ -178,23 +185,28 @@ function near(u) {
   let b = null, bd = 1e9;
   for (const e of S.units) {
     if (e.team === u.team || e.hp <= 0) continue;
+    if (e.inv > 0) continue;                       // 무적인 캐릭터는 타겟에서 제외
     const d = Math.hypot(e.x - u.x, e.y - u.y);
     if (d < bd) { bd = d; b = e; }
   }
   return [b, bd];
 }
 
-function moveTo(u, tx, ty, dt) {
+function moveTo(u, tx, ty, dt, sp) {
   const dx = tx - u.x, dy = ty - u.y, d = Math.hypot(dx, dy) || 1;
-  const s = Math.min(u.d.spd * CFG.SPEED_SCALE * (u.cursed ? CFG.CURSE_MOVE : 1) * dt, d);
+  const s = Math.min((sp || u.d.spd) * CFG.SPEED_SCALE * (u.cursed ? CFG.CURSE_MOVE : 1) * dt, d);
   u.x += dx / d * s; u.y += dy / d * s;
 }
 
 const forward = (u, dt) => moveTo(u, u.x, u.team === 1 ? 0 : H, dt);
-function hurt(e, dmg) { e.hp -= dmg; e.hit = .12; }
+function hurt(e, dmg) {                            // 무적이면 무시, 쉴드가 있으면 쉴드만 깎임(남는 피해는 버려짐)
+  if (e.inv > 0) return;
+  e.hit = .12;
+  if (e.shield > 0) e.shield -= dmg; else e.hp -= dmg;
+}
 
 function think(u, dt) {
-  u.cd -= dt * (u.cursed ? CFG.CURSE_ATK : 1); if (u.hit > 0) u.hit -= dt;
+  u.cd -= dt * (u.cursed ? CFG.CURSE_ATK : 1); if (u.hit > 0) u.hit -= dt; if (u.inv > 0) u.inv -= dt;
   if (u.stun > 0) { u.stun -= dt; u.spray = false; return; }      // 경직 중에는 아무것도 못 함
   const D = u.d;
   if (D.tp && !u.tpDone) teleport(u);
@@ -202,6 +214,9 @@ function think(u, dt) {
   if (D.ai === 'wander') return wander(u, dt);
   if (D.ai === 'flame') return flame(u, dt, e, d);
   if (D.ai === 'witch' || D.ai === 'mage') return cast(u, dt, e, d);
+  if (D.ai === 'castle') return castle(u, dt, e, d);
+  if (D.ai === 'arma') return arma(u, dt, e, d);
+  if (D.ai === 'flower') return bloom(u, dt, e, d);
 
   if (D.ai === 'melee') {                       // 기사: 가장 가까운 적에게 달려가 칼질, 지나간 길을 칠함
     if (e && d <= D.r + e.d.r + 3) { if (u.cd <= 0) { hurt(e, D.atk); u.cd = D.rate; } }
@@ -220,22 +235,71 @@ function think(u, dt) {
     for (const x of S.units) {
       if (x.team === u.team || x.hp <= 0) continue;
       const dd = Math.hypot(x.x - u.x, x.y - u.y);
-      if (dd <= D.range && dd > bd) { bd = dd; b = x; }
+      if (dd <= D.range && dd > bd && !(x.inv > 0)) { bd = dd; b = x; }
     }
     if (b) { S.shots.push({ k: 'ball', team: u.team, sx: u.x, sy: u.y, x: u.x, y: u.y, tx: b.x, ty: b.y, t: 0, z: 0, dmg: D.atk }); u.cd = D.rate; }
   }
 }
 
+function castle(u, dt, e, d) {                     // 캐슬: 적이 반경 안에 있으면 일정 주기로 기사 소환
+  const D = u.d;
+  if (e && d <= D.range && u.cd <= 0) { spawn(u.team, D.summon, u.x, u.y, true); u.cd = D.rate; }
+}
+
+function pickChain(u) {                            // 아르마딜로: 구르기 연쇄 대상 (아직 안 맞춘 가장 가까운 적)
+  let b = null, bd = 1e9;
+  for (const e of S.units) {
+    if (e.team === u.team || e.hp <= 0 || e.inv > 0 || u.hits.includes(e)) continue;
+    const dd = Math.hypot(e.x - u.x, e.y - u.y) - e.d.r;
+    if (dd <= u.d.chain && dd < bd) { bd = dd; b = e; }
+  }
+  return b;
+}
+
+function arma(u, dt, e, d) {
+  const D = u.d;
+  if (u.rs === 'roll') {                           // 구르는 중: 맞출 적이 없어지면 멈추고 쿨타임
+    u.rtm -= dt;
+    if (!u.rt || u.rt.hp <= 0 || u.rt.inv > 0) u.rt = pickChain(u);
+    if (!u.rt || u.rtm <= 0) { u.rs = 'cool'; u.cd = D.cool; return; }
+    moveTo(u, u.rt.x, u.rt.y, dt, D.rollSpd);
+    paint(u.x, u.y, D.trail + 1, u.team);
+    if (Math.hypot(u.rt.x - u.x, u.rt.y - u.y) <= D.r + u.rt.d.r + 2) {
+      hurt(u.rt, D.atk); u.hits.push(u.rt); u.rt = pickChain(u); u.rtm = 2.5;
+      if (!u.rt) { u.rs = 'cool'; u.cd = D.cool; }
+    }
+    return;
+  }
+  if (e) moveTo(u, e.x, e.y, dt); else forward(u, dt);
+  paint(u.x, u.y, D.trail, u.team);
+  if (u.rs === 'cool') { if (u.cd <= 0) u.rs = 'walk'; return; }
+  if (e && d <= D.r + e.d.r + D.meet) { u.rs = 'roll'; u.rt = e; u.hits = []; u.rtm = 2.5; }
+}
+
+function bloom(u, dt, e, d) {                      // 꽃순이: 사거리 안이면 꽃씨 던지기, 아니면 걸으면서 도트 페인트
+  const D = u.d;
+  if (e && d <= D.range) {
+    if (u.cd <= 0) { u.cd = D.rate; S.shots.push({ k: 'seed', team: u.team, sx: u.x, sy: u.y, x: u.x, y: u.y, tx: e.x, ty: e.y, t: 0, z: 0, dmg: D.atk }); }
+    return;
+  }
+  if (e) moveTo(u, e.x, e.y, dt); else forward(u, dt);
+  u.acc += D.dots * dt;
+  while (u.acc >= 1) {
+    u.acc--;
+    paint(u.x + (Math.random() - .5) * 2 * D.scatter, u.y + (Math.random() - .5) * 2 * D.scatter, D.dot, u.team);
+  }
+}
+
 function teleport(u) {                             // 암살자: 처음 한 번, 반경 안에서 가장 먼 적에게 순간이동
-  u.tpDone = true;
-  if (u.born === 'battle' && !u.d.lateTp) return;
+  if (u.born === 'battle' && !u.d.lateTp) { u.tpDone = true; return; }
   let b = null, bd = -1;
   for (const e of S.units) {
     if (e.team === u.team || e.hp <= 0) continue;
     const dd = Math.hypot(e.x - u.x, e.y - u.y);
-    if (dd <= u.d.tp && dd > bd) { bd = dd; b = e; }
+    if (dd <= u.d.tp && dd > bd && !(e.inv > 0)) { bd = dd; b = e; }
   }
-  if (!b) return;                                  // 반경 안에 적이 없으면 취소
+  if (!b) return;                                  // 반경 안에 적이 없으면 첫 적이 나타날 때까지 대기
+  u.tpDone = true;
   S.fx.push({ x: u.x, y: u.y, t: 0, team: u.team, r: 12 });
   u.x = b.x; u.y = b.y;
   S.fx.push({ x: u.x, y: u.y, t: 0, team: u.team, r: 12 });
@@ -286,10 +350,10 @@ function flame(u, dt, e, d) {                      // 소방관: 부채꼴 분�
   if (angDiff(ang, u.face) > HALF + Math.atan2(e.d.r, d)) { u.turn = D.turn; return; }   // 적이 부채꼴 밖 → 방향 전환 시작
   u.spray = true;                                  // 분사: 부채꼴 안의 모든 적에게 초당 피해
   for (const t of S.units) {
-    if (t.team === u.team || t.hp <= 0) continue;
+    if (t.team === u.team || t.hp <= 0 || t.inv > 0) continue;
     const dx = t.x - u.x, dy = t.y - u.y, dd = Math.hypot(dx, dy) || 1;
     if (dd - t.d.r > D.range) continue;
-    if (angDiff(Math.atan2(dy, dx), u.face) <= HALF + Math.atan2(t.d.r, dd)) t.hp -= D.atk * dt * (u.cursed ? CFG.CURSE_ATK : 1);
+    if (angDiff(Math.atan2(dy, dx), u.face) <= HALF + Math.atan2(t.d.r, dd)) { const v = D.atk * dt * (u.cursed ? CFG.CURSE_ATK : 1); if (t.shield > 0) t.shield -= v; else t.hp -= v; }
   }
   u.acc += D.dots * dt * (u.cursed ? CFG.CURSE_ATK : 1);                            // 부채꼴 안에 도트로 페인트 흩뿌리기
   while (u.acc >= 1) {
@@ -327,6 +391,20 @@ function stepShots(dt) {
         S.fx.push({ x: s.tx, y: s.ty, t: 0, team: s.team, r: D.zone * .5 });
         s.dead = true;
       } else { s.x += dx / d * st; s.y += dy / d * st; }
+    } else if (s.k === 'seed') {                   // 꽃순이의 꽃씨: 떨어진 곳에서 적 피해 + 아군 회복
+      s.t += dt / .6;
+      const t = Math.min(s.t, 1);
+      s.x = s.sx + (s.tx - s.sx) * t; s.y = s.sy + (s.ty - s.sy) * t; s.z = Math.sin(Math.PI * t) * 30;
+      if (s.t >= 1) {
+        const D = CFG.UNITS.flower;
+        for (const e of S.units) {
+          if (e.hp <= 0 || Math.hypot(e.x - s.tx, e.y - s.ty) > D.splash + e.d.r) continue;
+          if (e.team === s.team) e.hp = Math.min(e.max, e.hp + e.max * D.heal);
+          else hurt(e, s.dmg);
+        }
+        S.fx.push({ x: s.tx, y: s.ty, t: 0, team: s.team, r: D.splash * .7, flower: true });
+        s.dead = true;
+      }
     } else if (s.k === 'arrow') {
       if (s.tgt.hp > 0) { s.tx = s.tgt.x; s.ty = s.tgt.y; }
       const dx = s.tx - s.x, dy = s.ty - s.y, d = Math.hypot(dx, dy), st = 220 * dt;
@@ -450,6 +528,52 @@ function drawFire(u, c) {
   ctx.fillStyle = '#dc2626'; ctx.beginPath(); ctx.arc(x, y - r * .55, 2.6, 0, TAU); ctx.fill();
 }
 
+function drawCastle(u, c) {
+  const x = u.x, y = u.y;
+  ctx.fillStyle = '#9ca3af';
+  ctx.fillRect(x - 16, y - 8, 32, 22); ctx.strokeRect(x - 16, y - 8, 32, 22);                       // 성벽
+  [-16, -5, 6].forEach(o => { ctx.fillRect(x + o, y - 13, 10, 6); ctx.strokeRect(x + o, y - 13, 10, 6); });   // 성벽 위 총안
+  ctx.fillStyle = u.hit > 0 ? '#fff' : c; ctx.fillRect(x - 16, y - 1, 32, 4);                      // 팀 색 띠
+  ctx.fillStyle = '#4b5563'; ctx.fillRect(x - 5, y + 4, 10, 10); ctx.strokeRect(x - 5, y + 4, 10, 10);   // 성문
+  ctx.beginPath(); ctx.moveTo(x, y - 13); ctx.lineTo(x, y - 27); ctx.stroke();                     // 깃발
+  ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(x, y - 27); ctx.lineTo(x + 13, y - 23); ctx.lineTo(x, y - 19); ctx.closePath(); ctx.fill(); ctx.stroke();
+}
+
+function drawArma(u, c) {
+  const x = u.x, y = u.y, r = u.d.r;
+  if (u.shield > 0) { ctx.globalAlpha = .28; ctx.fillStyle = '#7dd3fc'; ctx.beginPath(); ctx.arc(x, y, r + 5, 0, TAU); ctx.fill(); ctx.globalAlpha = 1; }
+  if (u.rs === 'roll') {                           // 몸을 돌돌 말고 구르는 중
+    ctx.fillStyle = '#9ca3af'; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+    ctx.save(); ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.clip();
+    ctx.translate(x, y); ctx.rotate(clock * 22 + u.seed); ctx.strokeStyle = '#4b5563'; ctx.lineWidth = 2;
+    for (let k = -2; k <= 2; k++) { ctx.beginPath(); ctx.moveTo(k * 5, -r); ctx.lineTo(k * 5, r); ctx.stroke(); }
+    ctx.restore();
+    ctx.strokeStyle = c; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.stroke();
+    return;
+  }
+  ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#9ca3af'; ctx.beginPath(); ctx.arc(x, y - 2, r, Math.PI * 1.05, Math.PI * 1.95); ctx.closePath(); ctx.fill(); ctx.stroke();   // 등껍질
+  ctx.lineWidth = 1.2; [-4, 0, 4].forEach(o => { ctx.beginPath(); ctx.moveTo(x + o, y - 3); ctx.lineTo(x + o * 1.4, y - r); ctx.stroke(); });
+  ctx.lineWidth = 2; ctx.fillStyle = c;
+  [-1, 1].forEach(s => { ctx.beginPath(); ctx.arc(x + s * r * .7, y - r * .6, 3, 0, TAU); ctx.fill(); ctx.stroke(); });                 // 귀
+  ctx.fillStyle = '#d6b3a1'; ctx.beginPath(); ctx.ellipse(x, y + 5, 4.5, 3.2, 0, 0, TAU); ctx.fill(); ctx.stroke();                       // 주둥이
+  ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(x, y + 4.5, 1, 0, TAU); ctx.fill();
+  [-4, 4].forEach(o => { ctx.beginPath(); ctx.arc(x + o, y + 0, 1.6, 0, TAU); ctx.fill(); });
+}
+
+function drawFlower(u, c) {
+  const x = u.x, y = u.y, r = u.d.r;
+  ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.beginPath(); ctx.ellipse(x - r * .35, y - r * .4, r * .28, r * .18, -.6, 0, TAU); ctx.fill();
+  ctx.fillStyle = 'rgba(253,164,175,.9)';          // 볼터치
+  [-6.5, 6.5].forEach(o => { ctx.beginPath(); ctx.ellipse(x + o, y + 4, 2.6, 1.7, 0, 0, TAU); ctx.fill(); });
+  ctx.fillStyle = '#111'; ctx.lineWidth = 1.2;
+  [-3.5, 3.5].forEach(o => { ctx.beginPath(); ctx.arc(x + o, y + 1.5, 1.7, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.moveTo(x + o, y - .2); ctx.lineTo(x + o * 1.7, y - 2); ctx.stroke(); });   // 눈, 속눈썹
+  ctx.lineWidth = 1; ctx.fillStyle = '#f472b6';    // 머리의 분홍 꽃
+  for (let k = 0; k < 5; k++) { const a = k * TAU / 5 - Math.PI / 2; ctx.beginPath(); ctx.arc(x + 5 + Math.cos(a) * 3.6, y - r + 1 + Math.sin(a) * 3.6, 3, 0, TAU); ctx.fill(); ctx.stroke(); }
+  ctx.fillStyle = '#fde047'; ctx.beginPath(); ctx.arc(x + 5, y - r + 1, 2.4, 0, TAU); ctx.fill(); ctx.stroke();
+}
+
 function drawAssassin(u, c) {
   const x = u.x, y = u.y, r = u.d.r;
   ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); ctx.stroke();
@@ -511,6 +635,9 @@ function drawUnit(u) {
   else if (u.type === 'assassin') drawAssassin(u, c);
   else if (u.type === 'witch') drawWitch(u, c);
   else if (u.type === 'mage') drawMage(u, c);
+  else if (u.type === 'castle') drawCastle(u, c);
+  else if (u.type === 'arma') drawArma(u, c);
+  else if (u.type === 'flower') drawFlower(u, c);
   else if (u.type === 'launcher') {
     ctx.fillStyle = '#8b5a2b'; ctx.fillRect(x - r, y + 2, r * 2, 7); ctx.strokeRect(x - r, y + 2, r * 2, 7);
     ctx.fillStyle = '#4b5563';
@@ -532,6 +659,10 @@ function drawUnit(u) {
       ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x + r - 1, y - 9); ctx.lineTo(x + r - 1, y + 9); ctx.stroke();
     }
   }
+  if (u.inv > 0 && (u.inv > 1 || Math.sin(clock * 30) > 0)) {      // 무적 보호막 (끝나기 1초 전부터 깜빡임)
+    ctx.globalAlpha = .3; ctx.fillStyle = '#7dd3fc'; ctx.beginPath(); ctx.arc(x, y, r + 6, 0, TAU); ctx.fill();
+    ctx.globalAlpha = 1; ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2; ctx.stroke();
+  }
   if (u.cursed) { ctx.strokeStyle = '#7c3aed'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, r + 3, 0, TAU); ctx.stroke(); }   // 저주 표시
   if (u.stun > 0) {                                // 경직 표시 (머리 위에 빙글빙글)
     ctx.fillStyle = '#facc15';
@@ -540,6 +671,7 @@ function drawUnit(u) {
   const bw = Math.max(26, r * 2), by = y - r - 9;                    // 체력바
   ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x - bw / 2, by, bw, 4);
   ctx.fillStyle = '#22c55e'; ctx.fillRect(x - bw / 2, by, bw * Math.max(0, u.hp / u.max), 4);
+  if (u.shield > 0) { ctx.fillStyle = '#38bdf8'; ctx.fillRect(x - bw / 2, by - 5, bw * Math.min(1, u.shield / u.d.shield), 4); }   // 쉴드바
   ctx.restore();
 }
 
@@ -569,6 +701,10 @@ function draw() {
       ctx.fillStyle = '#a855f7'; ctx.strokeStyle = '#1b1f3b'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(s.x, s.y, 6, 0, TAU); ctx.fill(); ctx.stroke();
       ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.beginPath(); ctx.arc(s.x - 2, s.y - 2, 1.8, 0, TAU); ctx.fill();
+    } else if (s.k === 'seed') {
+      ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.beginPath(); ctx.ellipse(s.x, s.y, 5, 2.5, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#f472b6'; ctx.strokeStyle = '#1b1f3b'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(s.x, s.y - s.z, 5, 0, TAU); ctx.fill(); ctx.stroke();
     } else if (s.k === 'arrow') {
       ctx.strokeStyle = '#1b1f3b'; ctx.lineWidth = 2; ctx.beginPath();
       ctx.moveTo(s.x - Math.cos(s.a) * 9, s.y - Math.sin(s.a) * 9); ctx.lineTo(s.x, s.y); ctx.stroke();
@@ -580,7 +716,14 @@ function draw() {
   }
   for (const f of S.fx) {
     ctx.globalAlpha = 1 - f.t / .35; ctx.strokeStyle = HEX[f.team]; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(f.x, f.y, (f.r || CFG.UNITS.launcher.boom) * (1 + f.t * 4), 0, TAU); ctx.stroke();
+    if (f.flower) {                                // 꽃순이의 꽃 이펙트
+      ctx.fillStyle = '#f9a8d4'; ctx.lineWidth = 1.5;
+      for (let k = 0; k < 6; k++) {
+        const a = k * TAU / 6 + f.t * 3, q = f.r * (.4 + f.t * 2.4);
+        ctx.beginPath(); ctx.arc(f.x + Math.cos(a) * q, f.y + Math.sin(a) * q, 8, 0, TAU); ctx.fill(); ctx.stroke();
+      }
+      ctx.fillStyle = '#fde047'; ctx.beginPath(); ctx.arc(f.x, f.y, 6, 0, TAU); ctx.fill(); ctx.stroke();
+    } else { ctx.beginPath(); ctx.arc(f.x, f.y, (f.r || CFG.UNITS.launcher.boom) * (1 + f.t * 4), 0, TAU); ctx.stroke(); }
     if (f.bolt) {                                  // 마법사의 번개
       ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(f.x, f.y - 140);
       for (let k = 1; k < 8; k++) ctx.lineTo(f.x + (Math.random() - .5) * 24, f.y - 140 + k * 17.5);
@@ -644,8 +787,8 @@ cv.addEventListener('pointerup', endDrag);
 cv.addEventListener('pointercancel', endDrag);
 
 function fit() {
-  const s = Math.min(innerWidth / 360, innerHeight / 720);
-  $('wrap').style.height = Math.max(720, innerHeight / s) + 'px';     // 화면이 세로로 더 길면 아래쪽을 늘려서 꽉 채움
+  const s = Math.min(innerWidth / 360, innerHeight / 770);
+  $('wrap').style.height = Math.max(770, innerHeight / s) + 'px';     // 화면이 세로로 더 길면 아래쪽을 늘려서 꽉 채움
   $('wrap').style.transform = `translate(-50%,-50%) scale(${s})`;
 }
 addEventListener('resize', fit);
