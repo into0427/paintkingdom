@@ -27,7 +27,46 @@ html,body{margin:0;height:100%;background:#0f1226;overflow:hidden;font-family:"J
 #over[hidden]{display:none}
 #over h1{margin:0;font-size:44px;font-weight:400}
 #over p{margin:0;font-size:18px;line-height:1.5}
-#again{margin-top:8px;border:0;border-radius:12px;background:#ffd84d;color:#1b1f3b;font:inherit;font-size:18px;padding:10px 28px;cursor:pointer}
+#again,#tohome{margin-top:0;border:0;border-radius:12px;background:#ffd84d;color:#1b1f3b;font:inherit;font-size:18px;padding:10px 28px;cursor:pointer}
+.scr{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column}
+.scr[hidden]{display:none}
+#hcv{position:absolute;left:0;top:0;width:100%;height:100%}
+.hui{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;align-items:center;padding-top:8%}
+#logo{text-align:center;transform:rotate(-4deg);line-height:.95}
+#logo .crown{font-size:46px;display:block;animation:bob 2s ease-in-out infinite}
+#logo b{display:block;font-weight:400;font-size:62px;-webkit-text-stroke:5px #1b1f3b;paint-order:stroke fill;text-shadow:0 5px 0 #1b1f3b}
+#logo .l1{color:#2f6bff}
+#logo .l2{color:#ff3d6e}
+@keyframes bob{50%{transform:translateY(-6px) rotate(6deg)}}
+.sub{margin-top:18px;color:#1b1f3b;font-size:15px;text-align:center}
+.hbtns{margin-top:30px;display:flex;flex-direction:column;gap:12px;width:230px}
+.big,.mid{font:inherit;cursor:pointer;color:#1b1f3b;border:3px solid #1b1f3b;border-radius:16px;box-shadow:0 5px 0 #1b1f3b}
+.big{background:#ffd84d;font-size:24px;padding:12px}
+.mid{background:#fbfbf8;font-size:17px;padding:9px}
+.big:active:not(:disabled),.mid:active:not(:disabled){transform:translateY(4px);box-shadow:0 1px 0 #1b1f3b}
+.big:disabled,.mid:disabled{opacity:.4;cursor:default}
+.panel2{background:#1b1f3b;color:#fff;padding:14px;gap:10px}
+.panel2 h2{margin:0;font-weight:400;font-size:24px;text-align:center}
+.shead{display:flex;justify-content:space-between;font-size:14px;color:#c9cbe0}
+#sgrid{flex:1;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:8px;align-content:start;padding:2px}
+.card{border:3px solid transparent;border-radius:12px;background:#2b3060;color:#fff;font:inherit;text-align:left;padding:8px;display:flex;gap:8px;align-items:flex-start;cursor:pointer;opacity:.55}
+.card.on{border-color:#ffd84d;background:#3a4180;opacity:1}
+.ci{font-size:28px;line-height:1}
+.ct{display:flex;flex-direction:column;gap:2px;font-size:13px}
+.ct small{color:#ffd84d;font-size:12px}
+.ct em{font-style:normal;color:#c9cbe0;font-size:11px}
+.ct i{font-style:normal;color:#e5e7f5;font-size:11px;line-height:1.3}
+#tbody{flex:1;overflow-y:auto;font-size:15px;line-height:1.6;background:#2b3060;border-radius:12px;padding:12px}
+#tbody p{margin:0 0 8px}
+#tbody ul{padding-left:18px;margin:0}
+#tbody li{margin-bottom:5px;font-size:14px}
+#tdots{display:flex;justify-content:center;gap:6px}
+#tdots span{width:8px;height:8px;border-radius:50%;background:#4a5090}
+#tdots span.on{background:#ffd84d}
+.tnav{display:flex;gap:10px}
+.tnav .mid{flex:1}
+.obtn{display:flex;gap:10px;margin-top:8px}
+#tohome{background:#fbfbf8}
 </style>
 </head>
 <body>
@@ -41,7 +80,35 @@ html,body{margin:0;height:100%;background:#0f1226;overflow:hidden;font-family:"J
   <div id="over" hidden>
     <h1 id="title"></h1>
     <p id="result"></p>
-    <button id="again">다시 하기</button>
+    <div class="obtn"><button id="again">🔁 다시 하기</button><button id="tohome">🏠 홈 화면</button></div>
+  </div>
+
+  <div id="home" class="scr">
+    <canvas id="hcv" width="360" height="770"></canvas>
+    <div class="hui">
+      <div id="logo"><span class="crown">👑</span><b class="l1">Paint</b><b class="l2">Kingdom</b></div>
+      <div class="sub">페인트볼 군대로 아레나를 물들여라!</div>
+      <div class="hbtns">
+        <button class="big" id="bStart">▶ 게임 시작</button>
+        <button class="mid" id="bSel">🎨 캐릭터 선택</button>
+        <button class="mid" id="bTut">📖 튜토리얼</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="select" class="scr panel2" hidden>
+    <h2>🎨 캐릭터 선택</h2>
+    <div class="shead"><span id="scount"></span><span id="shint">출전시킬 캐릭터를 눌러서 고르세요</span></div>
+    <div id="sgrid"></div>
+    <button class="big" id="sdone">완료</button>
+  </div>
+
+  <div id="tutorial" class="scr panel2" hidden>
+    <h2 id="ttitle"></h2>
+    <div id="tbody"></div>
+    <div id="tdots"></div>
+    <div class="tnav"><button class="mid" id="tprev">◀ 이전</button><button class="mid" id="tnext">다음 ▶</button></div>
+    <button class="big" id="tclose">홈으로</button>
   </div>
 </div>
 
@@ -62,13 +129,13 @@ const CFG = {
   SPAWN_SHIELD: 4,     // 전투 중 소환한 캐릭터의 무적 시간(초) (타겟에서도 제외됨)
   SPEED_SCALE: 3,      // 이동속도 배율 (1로 하면 적어둔 숫자 그대로, 더 느려요)
   UNITS: {
-    knight:   { name: '기사',       icon: '🛡️', cost: 1, hp: 100, atk: 50,  spd: 10, rate: 1,   range: 0,   r: 11, trail: 5, ai: 'melee' },
-    archer:   { name: '궁수',       icon: '🏹', cost: 2, hp: 80,  atk: 70,  spd: 8,  rate: 1.2, range: 100, r: 11, arrow: 4, ai: 'ranged' },
+    knight:   { name: '기사',       icon: '🛡️', cost: 1, hp: 100, atk: 50,  spd: 10, rate: 1,   range: 0,   r: 11, trail: 6, ai: 'melee' },
+    archer:   { name: '궁수',       icon: '🏹', cost: 2, hp: 80,  atk: 70,  spd: 8,  rate: 1.2, range: 100, r: 11, arrow: 5, ai: 'ranged' },
     launcher: { name: '페인트런처', icon: '🪨', cost: 4, hp: 200, atk: 100, spd: 0,  rate: 3,   range: 250, r: 14, boom: 15, ai: 'artillery' },
     // 런치킨: 공격 없이 랜덤하게 뛰어다니며 칠함
-    chicken:  { name: '런치킨',     icon: '🐔', cost: 3, hp: 70,  atk: 0,   spd: 15, rate: 0,   range: 0,   r: 9,  trail: 5, ai: 'wander' },
+    chicken:  { name: '런치킨',     icon: '🐔', cost: 3, hp: 70,  atk: 0,   spd: 15, rate: 0,   range: 0,   r: 9,  trail: 7, ai: 'wander' },
     // 타이탄: 거대한 탱커 (trail = 지나간 길에 칠하는 굵기)
-    titan:    { name: '타이탄',     icon: '🪓', cost: 4, hp: 500, atk: 200, spd: 7,  rate: 2.2, range: 0,   r: 20, trail: 5, ai: 'melee' },
+    titan:    { name: '타이탄',     icon: '🪓', cost: 4, hp: 500, atk: 200, spd: 7,  rate: 2.2, range: 0,   r: 20, trail: 6, ai: 'melee' },
     // 소방관: atk = 초당 피해, cone = 부채꼴 각도(도), turn = 방향 전환 시간(초), dots = 초당 칠하는 점 개수, dot = 점 크기
     fire:     { name: '소방관',     icon: '🧯', cost: 3, hp: 150, atk: 40,  spd: 8,  rate: 0,   range: 90,  r: 11, cone: 40, turn: 1, dots: 100, dot: 3, ai: 'flame' },
     // 암살자: tp = 순간이동 반경, tpPaint = 도착 지점 칠하는 반경, lateTp = 전투 중 소환해도 순간이동할지(false면 전투 시작 때 있던 암살자만)
@@ -78,11 +145,11 @@ const CFG = {
     // 마법사: zap = 번개 맞은 곳 칠하는 반경, stun = 경직 시간(초)
     mage:     { name: '마법사',     icon: '🧙', cost: 4, hp: 100, atk: 250, spd: 8,  rate: 3,   range: 120, r: 11, zap: 15, stun: 0.5, ai: 'mage' },
     // 캐슬: 건물. 반경(range) 안에 적이 있으면 rate초마다 summon 캐릭터를 자기 위치에 소환
-    castle:   { name: '캐슬',       icon: '🏰', cost: 5, hp: 200, atk: 0,   spd: 0,  rate: 6,   range: 120, r: 18, summon: 'knight', ai: 'castle' },
+    castle:   { name: '캐슬',       icon: '🏰', cost: 5, hp: 200, atk: 0,   spd: 0,  rate: 1.5,   range: 120, r: 18, summon: 'knight', ai: 'castle' },
     // 아르마딜로: shield = 쉴드 체력, meet = 구르기 시작 거리, rollSpd = 구르는 속도, chain = 연쇄 반경, cool = 구르기 후 쿨타임(초)
-    arma:     { name: '아르마딜로', icon: '🌀', cost: 3, hp: 100, shield: 100, atk: 50, spd: 8, rate: 0, range: 0, r: 11, trail: 5, meet: 30, rollSpd: 15, chain: 25, cool: 2, ai: 'arma' },
+    arma:     { name: '아르마딜로', icon: '🌀', cost: 3, hp: 100, shield: 100, atk: 50, spd: 8, rate: 0, range: 0, r: 11, trail: 5, meet: 30, rollSpd: 20, chain: 75, cool: 2, ai: 'arma' },
     // 꽃순이: splash = 꽃 이펙트 반경, heal = 아군 회복 비율, dots = 걸을 때 초당 흩뿌리는 점 개수, scatter = 흩뿌리는 범위, dot = 점 크기
-    flower:   { name: '꽃순이',     icon: '🌸', cost: 4, hp: 120, atk: 40,  spd: 9,  rate: 1.8, range: 70,  r: 11, splash: 35, heal: 0.1, dots: 30, scatter: 12, dot: 3, ai: 'flower' }
+    flower:   { name: '꽃순이',     icon: '🌸', cost: 4, hp: 120, atk: 40,  spd: 9,  rate: 1.8, range: 70,  r: 11, splash: 35, heal: 0.2, dots: 30, scatter: 12, dot: 3, ai: 'flower' }
   }
 };
 
@@ -91,12 +158,12 @@ const CFG = {
    ==================================================== */
 const W = 360, H = 480, MID = H / 2, CELL = 4, GW = W / CELL, GH = H / CELL, TAU = Math.PI * 2;
 const $ = id => document.getElementById(id);
-const cv = $('cv'), ctx = cv.getContext('2d');
+const cv = $('cv'); let ctx = cv.getContext('2d'); const gctx = ctx;   // 홈 화면에서 ctx를 잠깐 바꿔 쓰기 위해 let
 const pcv = document.createElement('canvas'); pcv.width = GW; pcv.height = GH;
 const pctx = pcv.getContext('2d'), img = pctx.createImageData(GW, GH);
 const COL = { 1: [47, 107, 255], 2: [255, 61, 110] };      // 1 = 플레이어(파랑), 2 = AI(분홍)
 const HEX = { 1: '#2f6bff', 2: '#ff3d6e' };
-let S, last = 0, clock = 0;
+let S, last = 0, clock = 0, screen = 'home';
 
 /* ====================================================
    게임 시작 / 상태
@@ -155,9 +222,9 @@ function aiBuyOne() {
   const names = Object.keys(CFG.UNITS).filter(k => CFG.UNITS[k].cost <= S.coin[1]);
   if (!names.length) return false;
   const w = { knight: 5, archer: 3, launcher: 1.5, chicken: 1.5, titan: 1.5, fire: 2, assassin: 1, witch: 2, mage: 1.5, castle: 1, arma: 2, flower: 1.5 };
-  let sum = 0; names.forEach(k => sum += w[k]);
+  let sum = 0; names.forEach(k => sum += (w[k] || 1.5));
   let r = Math.random() * sum, pick = names[0];
-  for (const k of names) { r -= w[k]; if (r <= 0) { pick = k; break; } }
+  for (const k of names) { r -= (w[k] || 1.5); if (r <= 0) { pick = k; break; } }
   S.coin[1] -= CFG.UNITS[pick].cost;
   const prep = S.phase === 'prep';
   const [x, y] = (['launcher', 'witch', 'mage', 'flower'].includes(pick) && prep) ? pickSpot(2, pick, 15, 70)
@@ -668,6 +735,7 @@ function drawUnit(u) {
     ctx.fillStyle = '#facc15';
     for (let k = 0; k < 3; k++) { const a = clock * 8 + k * TAU / 3; ctx.beginPath(); ctx.arc(x + Math.cos(a) * 8, y - r - 15 + Math.sin(a) * 3, 2, 0, TAU); ctx.fill(); }
   }
+  if (u.nobar) { ctx.restore(); return; }          // 홈 화면 장식용 캐릭터는 체력바 없음
   const bw = Math.max(26, r * 2), by = y - r - 9;                    // 체력바
   ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x - bw / 2, by, bw, 4);
   ctx.fillStyle = '#22c55e'; ctx.fillRect(x - bw / 2, by, bw * Math.max(0, u.hp / u.max), 4);
@@ -754,15 +822,9 @@ function ui() {
   go.textContent = S.phase === 'prep' ? '전투 시작 (남은 코인은 사라져요)' : S.phase === 'battle' ? `전투 중 · ${CFG.INCOME_EVERY}초마다 +1코인` : '전투 종료';
 }
 
-for (const k in CFG.UNITS) {
-  const d = CFG.UNITS[k], b = document.createElement('button');
-  b.className = 'ub'; b.dataset.t = k;
-  b.innerHTML = `<span class="ic">${d.icon}</span><span class="tx">${d.name}<small>${d.cost}코인</small></span>`;
-  b.onclick = () => buy(k);
-  $('units').appendChild(b);
-}
 $('go').onclick = startBattle;
-$('again').onclick = newGame;
+$('again').onclick = startGame;
+$('tohome').onclick = () => show('home');
 
 function pos(e) { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * W / r.width, (e.clientY - r.top) * H / r.height]; }
 
@@ -786,6 +848,148 @@ const endDrag = () => { if (S) S.drag = null; };
 cv.addEventListener('pointerup', endDrag);
 cv.addEventListener('pointercancel', endDrag);
 
+/* ====================================================
+   홈 화면 / 캐릭터 선택 / 튜토리얼
+   ==================================================== */
+const MAX_PICK = 12;                               // 출전시킬 수 있는 캐릭터 최대 개수
+const DESC = {                                     // 캐릭터 한 줄 설명 (새 캐릭터를 만들면 여기에도 추가하세요)
+  knight: '빠르고 값싼 기본 병사. 지나간 길을 칠해요',
+  archer: '긴 사거리로 근접 캐릭터를 사냥해요',
+  launcher: '멀리 있는 적에게 거대한 페인트볼 발사',
+  chicken: '공격 없이 뛰어다니며 색칠만 하는 닭',
+  titan: '거대한 체력으로 앞을 막는 탱커',
+  fire: '부채꼴로 계속 분사해요. 방향 전환은 느려요',
+  assassin: '적이 가까워지면 순간이동해서 기습해요',
+  witch: '저주 장판으로 적을 느리고 둔하게 만들어요',
+  mage: '번개 한 방으로 적을 잠깐 기절시켜요',
+  castle: '적이 다가오면 기사를 계속 소환하는 건물',
+  arma: '쉴드를 두르고 연쇄로 구르는 돌격병',
+  flower: '꽃씨로 적은 공격, 아군은 회복시켜요'
+};
+
+let SEL = [];
+try { SEL = JSON.parse(localStorage.getItem('pk_sel') || '[]'); } catch (e) { SEL = []; }
+if (!Array.isArray(SEL)) SEL = [];
+SEL = SEL.filter(k => CFG.UNITS[k]).slice(0, MAX_PICK);
+if (!SEL.length) SEL = Object.keys(CFG.UNITS).slice(0, MAX_PICK);
+const saveSel = () => { try { localStorage.setItem('pk_sel', JSON.stringify(SEL)); } catch (e) {} };
+
+function show(name) {                              // 화면 전환: home / select / tutorial / game
+  screen = name;
+  for (const id of ['home', 'select', 'tutorial']) $(id).hidden = id !== name;
+}
+
+function buildShop() {                             // 선택한 캐릭터만 소환 버튼으로 만들기
+  const box = $('units'); box.innerHTML = '';
+  for (const k in CFG.UNITS) {
+    if (!SEL.includes(k)) continue;
+    const d = CFG.UNITS[k], b = document.createElement('button');
+    b.className = 'ub'; b.dataset.t = k;
+    b.innerHTML = `<span class="ic">${d.icon}</span><span class="tx">${d.name}<small>${d.cost}코인</small></span>`;
+    b.onclick = () => buy(k);
+    box.appendChild(b);
+  }
+}
+
+function startGame() {
+  if (!SEL.length) { buildSelect(); show('select'); return; }
+  buildShop(); newGame(); show('game');
+}
+
+let hintT;
+function buildSelect() {
+  const g = $('sgrid'); g.innerHTML = '';
+  for (const k in CFG.UNITS) {
+    const d = CFG.UNITS[k], c = document.createElement('button');
+    c.className = 'card' + (SEL.includes(k) ? ' on' : '');
+    c.innerHTML = `<span class="ci">${d.icon}</span><span class="ct"><b>${d.name} <small>${d.cost}코인</small></b><em>체력 ${d.hp}${d.shield ? '+' + d.shield : ''} · 공격 ${d.atk}</em><i>${DESC[k] || ''}</i></span>`;
+    c.onclick = () => {
+      const i = SEL.indexOf(k);
+      if (i >= 0) SEL.splice(i, 1);
+      else if (SEL.length < MAX_PICK) SEL.push(k);
+      else { hint(`최대 ${MAX_PICK}개까지 고를 수 있어요`); return; }
+      c.classList.toggle('on', SEL.includes(k)); saveSel(); count();
+    };
+    g.appendChild(c);
+  }
+  count();
+}
+function count() { $('scount').textContent = `선택 ${SEL.length} / ${MAX_PICK}`; $('sdone').disabled = !SEL.length; }
+function hint(t) {
+  $('shint').textContent = t; clearTimeout(hintT);
+  hintT = setTimeout(() => { $('shint').textContent = '출전시킬 캐릭터를 눌러서 고르세요'; }, 1800);
+}
+
+let tp = 0;
+function tutPages() {
+  const C = CFG;
+  const list = Object.keys(C.UNITS).map(k => `<li>${C.UNITS[k].icon} <b>${C.UNITS[k].name}</b> (${C.UNITS[k].cost}코인) – ${DESC[k] || ''}</li>`).join('');
+  return [
+    ['🎯 게임 목표', `<p>아레나를 <b>내 페인트(파랑)</b>로 더 많이 칠하면 승리!</p><p>화면의 <b>위쪽 절반은 상대 진영</b>(분홍), <b>아래쪽 절반은 내 진영</b>이에요. 전투가 끝났을 때 아레나에 내 색이 더 많이 칠해져 있으면 이겨요.</p><p>같은 자리를 다시 칠하면 <b>나중에 칠한 색</b>으로 바뀌어요. 싸움도 중요하지만 칠하는 것도 잊지 마세요!</p>`],
+    [`🎨 1단계: 전투 준비 (${C.PREP}초)`, `<p>${C.START_COIN}코인으로 군대를 짜요.</p><ul><li>아래 버튼으로 캐릭터를 고르면 코인이 쓰이고 내 진영에 소환돼요.</li><li>소환된 캐릭터는 <b>끌어서</b> 원하는 위치로 옮길 수 있어요.</li><li>상대 진영은 <b>보이지 않아요!</b> 상대가 뭘 냈을지 예상해 보세요.</li><li>준비가 끝나면 <b>전투 시작</b> 버튼을 누르거나 ${C.PREP}초를 기다리세요.</li></ul><p>⚠️ <b>남은 코인은 전투가 시작되면 사라져요.</b> 아끼지 말고 다 쓰세요!</p>`],
+    [`⚔️ 2단계: 전투 (${C.BATTLE}초)`, `<p>이제 양쪽 진영이 모두 보여요. 캐릭터들은 <b>알아서 싸워요</b>.</p><ul><li>전투는 <b>0코인</b>에서 시작하고, <b>${C.INCOME_EVERY}초마다 1코인</b>이 들어와요.</li><li>모은 코인으로 추가 지원군을 소환할 수 있어요. 지원군은 내 진영 맨 아래쪽에서 나타나요.</li><li>전투 중에 소환한 캐릭터는 <b>${C.SPAWN_SHIELD}초 동안 무적</b>이고 상대의 타겟이 되지 않아요. 밀리고 있을 때 역전 기회예요!</li></ul>`],
+    ['🖌️ 페인트 칠하기', `<p>캐릭터마다 칠하는 방식이 달라요.</p><ul><li><b>지나간 길</b>을 칠해요: 기사, 타이탄, 런치킨, 아르마딜로</li><li><b>화살이 지나간 길</b>: 궁수</li><li><b>맞은 곳 주변</b>: 페인트런처, 마녀, 마법사</li><li><b>부채꼴 범위에 점</b>을 흩뿌려요: 소방관</li><li>걸어다니며 점을 흩뿌려요: 꽃순이</li></ul><p>전투가 약해도 색칠을 잘하는 캐릭터가 승부를 가를 수 있어요.</p>`],
+    ['🧠 상성 팁', `<ul><li><b>궁수·소방관</b>: 기사 같은 근접 캐릭터를 잘 잡아요.</li><li><b>페인트런처</b>: 먼 곳에서 궁수·소방관을 순삭해요.</li><li><b>기사·타이탄</b>: 빠르게 다가가 느린 런처를 잡아요.</li><li><b>런치킨</b>: 싸움엔 도움이 안 되지만 후반 색칠 싸움의 핵심! 단, 궁수에게는 약해요.</li><li><b>캐슬</b>: 수비할 때 든든해요. 적이 다가오면 기사가 계속 나와요.</li></ul><p>상대의 조합을 보고 맞는 카운터를 소환해 보세요.</p>`],
+    ['📋 캐릭터 도감', `<ul>${list}</ul>`]
+  ];
+}
+function showTut(i) {
+  const pg = tutPages(); tp = Math.max(0, Math.min(pg.length - 1, i));
+  $('ttitle').textContent = pg[tp][0]; $('tbody').innerHTML = pg[tp][1]; $('tbody').scrollTop = 0;
+  $('tdots').innerHTML = pg.map((_, n) => `<span class="${n === tp ? 'on' : ''}"></span>`).join('');
+  $('tprev').disabled = tp === 0; $('tnext').disabled = tp === pg.length - 1;
+}
+
+$('bStart').onclick = startGame;
+$('bSel').onclick = () => { buildSelect(); show('select'); };
+$('bTut').onclick = () => { showTut(0); show('tutorial'); };
+$('sdone').onclick = () => show('home');
+$('tclose').onclick = () => show('home');
+$('tprev').onclick = () => showTut(tp - 1);
+$('tnext').onclick = () => showTut(tp + 1);
+
+/* ---- 홈 화면 배경 (물감 얼룩 + 서로 마주보는 캐릭터들) ---- */
+const BLOBS = [];
+(function () {
+  const pal = ['#2f6bff', '#ff3d6e', '#ffd84d', '#34d399', '#a855f7'], rnd = (a, b) => a + Math.random() * (b - a);
+  for (let i = 0; i < 26; i++) {
+    const left = i % 2 === 0, mix = Math.random() < .25;
+    BLOBS.push({ fx: left ? rnd(-.05, .55) : rnd(.45, 1.05), fy: rnd(0, 1), r: rnd(22, 70), ph: rnd(0, 6.28), a: rnd(.55, .9),
+                 c: mix ? pal[2 + i % 3] : left ? pal[0] : pal[1] });
+  }
+})();
+const CAST = [[1, 'titan', 50, 0], [1, 'archer', 84, -38], [1, 'knight', 112, 10], [1, 'flower', 158, 4],
+              [2, 'mage', 204, 4], [2, 'assassin', 252, 10], [2, 'fire', 292, -38], [2, 'witch', 320, 6]];
+
+function drawHome() {
+  const hc = $('hcv'), Hh = $('wrap').offsetHeight || 770;
+  if (hc.height !== Hh) { hc.width = 360; hc.height = Hh; }
+  const hx = hc.getContext('2d');
+  hx.fillStyle = '#fbfbf8'; hx.fillRect(0, 0, 360, Hh);
+  for (const b of BLOBS) {
+    const cx = b.fx * 360, cy = b.fy * Hh;
+    hx.globalAlpha = b.a; hx.fillStyle = b.c; hx.beginPath();
+    for (let i = 0; i <= 28; i++) {
+      const a = i / 28 * TAU, k = b.r * (1 + .09 * Math.sin(a * 3 + clock * 1.2 + b.ph) + .06 * Math.sin(a * 5 - clock + b.ph));
+      if (i) hx.lineTo(cx + Math.cos(a) * k, cy + Math.sin(a) * k); else hx.moveTo(cx + Math.cos(a) * k, cy + Math.sin(a) * k);
+    }
+    hx.closePath(); hx.fill();
+    for (let j = 0; j < 3; j++) { const a = b.ph + j * 2.1; hx.beginPath(); hx.arc(cx + Math.cos(a) * b.r * 1.35, cy + Math.sin(a) * b.r * 1.35, b.r * .12, 0, TAU); hx.fill(); }
+  }
+  hx.globalAlpha = 1;
+  const g = hx.createRadialGradient(180, 150, 10, 180, 150, 200);     // 로고 뒤에 은은한 흰 빛
+  g.addColorStop(0, 'rgba(255,255,255,.88)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  hx.fillStyle = g; hx.fillRect(0, 0, 360, Hh);
+  ctx = hx;
+  try {
+    CAST.forEach((c, i) => {
+      const d = CFG.UNITS[c[1]]; if (!d) return;
+      drawUnit({ team: c[0], type: c[1], d, x: c[2], y: Hh - 100 + c[3] + Math.sin(clock * 3 + i) * 3, hp: d.hp, max: d.hp,
+                 shield: 0, inv: 0, hit: 0, stun: 0, rs: 'walk', spray: false, nobar: true, seed: i * 1.7, face: c[0] === 1 ? -.3 : Math.PI + .3 });
+    });
+  } finally { ctx = gctx; }
+}
+
 function fit() {
   const s = Math.min(innerWidth / 360, innerHeight / 770);
   $('wrap').style.height = Math.max(770, innerHeight / s) + 'px';     // 화면이 세로로 더 길면 아래쪽을 늘려서 꽉 채움
@@ -795,12 +999,12 @@ addEventListener('resize', fit);
 
 function loop(ts) {
   const dt = Math.min(.05, (ts - last) / 1000 || 0); last = ts; clock = ts / 1000;
-  if (S.phase !== 'over') update(dt);
-  draw(); ui();
+  if (screen === 'game') { if (S.phase !== 'over') update(dt); draw(); ui(); }
+  else if (screen === 'home') drawHome();
   requestAnimationFrame(loop);
 }
 
-fit(); newGame(); requestAnimationFrame(loop);
+fit(); newGame(); show('home'); requestAnimationFrame(loop);
 })();
 </script>
 </body>
