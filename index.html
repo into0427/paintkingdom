@@ -131,11 +131,21 @@ html,body{margin:0;height:100%;background:#0f1226;overflow:hidden;font-family:"J
 .mt span{color:#ffd84d;font-size:12px}
 .mre{border:0;border-radius:10px;background:#4a5090;color:#fff;font:inherit;font-size:12px;padding:8px;min-width:68px;cursor:pointer}
 .mre:disabled{opacity:.45;cursor:default}
+.hm{border:0;background:transparent;color:#fff;font-size:18px;cursor:pointer;padding:0 4px}
+#bSet{position:absolute;top:12px;right:12px;z-index:3;width:42px;height:42px;border-radius:50%;border:3px solid #1b1f3b;background:#fbfbf8;font-size:20px;cursor:pointer;box-shadow:0 3px 0 #1b1f3b}
+.sl{display:flex;align-items:center;gap:10px;font-size:14px}
+.sl input{flex:1}
+#bk{background:#2b3060;color:#fff;border:3px solid #4a5090;border-radius:12px;padding:8px;font-size:11px;font-family:monospace;resize:none}
+#bkHint{min-height:18px;font-size:13px;color:#ffd84d;text-align:center}
+#sNote{font-size:12px}
+.ic canvas,.ci canvas{display:block}
+#augtitle canvas{vertical-align:middle}
+.mre{white-space:normal;line-height:1.2}
 </style>
 </head>
 <body>
 <div id="wrap">
-  <div id="hud"><span id="phase"></span><span id="timer"></span><span id="coin"></span></div>
+  <div id="hud"><button class="hm" id="hMute">🔊</button><span id="phase"></span><span id="timer"></span><span id="coin"></span></div>
   <canvas id="cv" width="360" height="480"></canvas>
   <div id="panel">
     <div id="units"></div>
@@ -151,6 +161,7 @@ html,body{margin:0;height:100%;background:#0f1226;overflow:hidden;font-family:"J
 
   <div id="home" class="scr">
     <canvas id="hcv" width="360" height="770"></canvas>
+    <button id="bSet">⚙️</button>
     <div class="hui">
       <div id="logo"><span class="crown">👑</span><b class="l1">Paint</b><b class="l2">Kingdom</b></div>
       <div class="sub">페인트볼 군대로 아레나를 물들여라!</div>
@@ -195,6 +206,19 @@ html,body{margin:0;height:100%;background:#0f1226;overflow:hidden;font-family:"J
     <div class="plabel">완료하면 💎 보석을 받아요. 필요한 캐릭터는 캐릭터 선택에서 출전시켜야 해요.</div>
     <div id="mlist"></div>
     <button class="mid" id="mback">◀ 돌아가기</button>
+  </div>
+
+  <div id="settings" class="scr panel2" hidden>
+    <h2>⚙️ 설정</h2>
+    <div class="plabel">소리</div>
+    <button class="mid" id="sMusic"></button>
+    <div class="sl"><span>볼륨</span><input type="range" id="sVol" min="0" max="100"><b id="sVolN"></b></div>
+    <div class="plabel" id="sNote"></div>
+    <div class="plabel">저장 데이터 백업 (기기를 바꿀 때 써요)</div>
+    <textarea id="bk" rows="5" placeholder="'백업 코드 만들기'를 누르면 여기에 코드가 나와요. 다른 기기에서는 코드를 여기에 붙여넣고 '불러오기'를 누르세요"></textarea>
+    <div class="tnav"><button class="mid" id="bkOut">📤 백업 코드 만들기</button><button class="mid" id="bkIn">📥 불러오기</button></div>
+    <div id="bkHint"></div>
+    <button class="big" id="sdone2">완료</button>
   </div>
 
   <div id="profile" class="scr panel2" hidden>
@@ -1048,7 +1072,7 @@ const saveSel = () => { try { localStorage.setItem('pk_sel', JSON.stringify(SEL)
 
 function show(name) {                              // 화면 전환: home / select / tutorial / game
   screen = name; if (name === 'home') refreshHome();
-  for (const id of ['home', 'select', 'profile', 'palette', 'augscr', 'missions', 'tutorial']) $(id).hidden = id !== name;
+  for (const id of ['home', 'select', 'profile', 'palette', 'augscr', 'missions', 'settings', 'tutorial']) $(id).hidden = id !== name;
 }
 
 function buildShop() {                             // 선택한 캐릭터만 소환 버튼으로 만들기
@@ -1057,7 +1081,8 @@ function buildShop() {                             // 선택한 캐릭터만 소
     if (!SEL.includes(k)) continue;
     const d = CFG.UNITS[k], b = document.createElement('button');
     b.className = 'ub'; b.dataset.t = k;
-    b.innerHTML = `<span class="ic">${d.icon}</span><span class="tx">${d.name}<small>${d.cost}코인</small></span>`;
+    b.innerHTML = `<span class="ic"></span><span class="tx">${d.name}<small>${d.cost}코인</small></span>`;
+    b.querySelector('.ic').appendChild(mkIcon(k, 30));
     b.onclick = () => buy(k);
     box.appendChild(b);
   }
@@ -1077,8 +1102,9 @@ function buildSelect() {
     c.className = 'card' + (own ? '' : ' lock') + (own && SEL.includes(k) ? ' on' : '');
     const na = (SAVE.augs[k] || []).length, tk = SAVE.tickets[k] || 0;
     const note = own ? (DESC[k] || '') : pool.includes(k) ? '팔레트에서 얻을 수 있어요' : `${leagueOf(k)}에 도달하면 팔레트에 등장해요`;
-    c.innerHTML = `<span class="ci">${own ? d.icon : '🔒'}</span><span class="ct"><b>${d.name} <small>${d.cost}코인</small></b><em>체력 ${d.hp}${d.shield ? '+' + d.shield : ''} · 공격 ${d.atk}${own ? ' · 증강 ' + na + '/5' : ''}</em><i>${note}</i>${own && tk > 0 && na < 5 ? `<span class="up">⬆ 업그레이드 가능! (증강권 ${tk})</span>` : ''}</span>${own ? '<span class="gear">⚙️</span>' : ''}`;
+    c.innerHTML = `<span class="ci">${own ? '' : '🔒'}</span><span class="ct"><b>${d.name} <small>${d.cost}코인</small></b><em>체력 ${d.hp}${d.shield ? '+' + d.shield : ''} · 공격 ${d.atk}${own ? ' · 증강 ' + na + '/5' : ''}</em><i>${note}</i>${own && tk > 0 && na < 5 ? `<span class="up">⬆ 업그레이드 가능! (증강권 ${tk})</span>` : ''}</span>${own ? '<span class="gear">⚙️</span>' : ''}`;
     if (own) {
+      c.querySelector('.ci').appendChild(mkIcon(k, 34));
       const open = e => { e.stopPropagation(); openAug(k); };
       c.querySelector('.gear').onclick = open;
       const up = c.querySelector('.up'); if (up) up.onclick = open;
@@ -1370,12 +1396,12 @@ function rollPalette() {                           // 팔레트 하나를 열어
     if (!SAVE.owned.includes(id)) {
       SAVE.owned.push(id); SAVE.dry = 0;
       if (SEL.length < MAX_PICK) { SEL.push(id); saveSel(); }
-      return { icon: d.icon, title: `새 캐릭터! ${d.name}`, sub: '이제 캐릭터 선택에서 쓸 수 있어요', cls: 'new' };
+      return { icon: d.icon, unit: id, title: `새 캐릭터! ${d.name}`, sub: '이제 캐릭터 선택에서 쓸 수 있어요', cls: 'new' };
     }
     SAVE.dry++;
-    if ((SAVE.augs[id] || []).length >= 5) { SAVE.gems += PALETTE.maxedGems; return { icon: d.icon, title: `${d.name} 중복!`, sub: `증강을 모두 해금해서 보석 ${PALETTE.maxedGems}개로 바뀌었어요`, cls: 'dup' }; }
+    if ((SAVE.augs[id] || []).length >= 5) { SAVE.gems += PALETTE.maxedGems; return { icon: d.icon, unit: id, title: `${d.name} 중복!`, sub: `증강을 모두 해금해서 보석 ${PALETTE.maxedGems}개로 바뀌었어요`, cls: 'dup' }; }
     SAVE.tickets[id] = (SAVE.tickets[id] || 0) + 1;
-    return { icon: d.icon, title: `${d.name} 중복!`, sub: `증강권 +1 (보유 ${SAVE.tickets[id]}장)`, cls: 'dup' };
+    return { icon: d.icon, unit: id, title: `${d.name} 중복!`, sub: `증강권 +1 (보유 ${SAVE.tickets[id]}장)`, cls: 'dup' };
   }
   SAVE.dry++;
   if (kind === 'color') {
@@ -1438,7 +1464,7 @@ let augKey = null;
 function openAug(k) { augKey = k; buildAug(); show('augscr'); }
 function buildAug(msg) {
   const k = augKey, d = CFG.UNITS[k];
-  $('augtitle').textContent = `${d.icon} ${d.name} 증강`;
+  { const t = $('augtitle'); t.textContent = ''; t.appendChild(mkIcon(k, 36)); t.appendChild(document.createTextNode(` ${d.name} 증강`)); }
   $('augsub').textContent = `🔧 증강권 ${SAVE.tickets[k] || 0}장 · 💎 ${SAVE.gems} · 해금 ${augsOf(k).length}/5`;
   $('aughint').textContent = msg || '';
   const box = $('auglist'); box.innerHTML = '';
@@ -1680,7 +1706,8 @@ function drawPal() {
     if (s2 > 0) {
       const gr = g.createRadialGradient(cx, cy, 4, cx, cy, 120 * s2); gr.addColorStop(0, col); gr.addColorStop(1, 'rgba(255,255,255,0)');
       g.globalAlpha = .75; g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, 120 * s2, 0, TAU); g.fill(); g.globalAlpha = 1;
-      g.font = `${100 * s2}px "Apple Color Emoji","Segoe UI Emoji",sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(pal.res.icon, cx, cy + 4);
+      if (pal.res.unit && CFG.UNITS[pal.res.unit]) drawUnitBig(g, pal.res.unit, cx, cy + 6, 3.4 * s2);      // 캐릭터는 인게임 모습 그대로
+      else { g.font = `${100 * s2}px "Apple Color Emoji","Segoe UI Emoji",sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(pal.res.icon, cx, cy + 4); }
       g.fillStyle = '#fff';
       for (let i = 0; i < 8; i++) { const a = clock * .7 + i * TAU / 8, r = (88 + Math.sin(clock * 4 + i) * 8) * s2, sz = 5 + Math.abs(Math.sin(clock * 5 + i)) * 4; g.beginPath(); g.moveTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r - sz); g.lineTo(cx + Math.cos(a) * r + sz * .4, cy + Math.sin(a) * r); g.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r + sz); g.lineTo(cx + Math.cos(a) * r - sz * .4, cy + Math.sin(a) * r); g.closePath(); g.fill(); }
     }
@@ -1702,21 +1729,21 @@ function drawPal() {
 /* ====================================================
    미션 (완료하면 보석, 가진 캐릭터로 깰 수 있는 것만 등장)
    ==================================================== */
-const MISSION_GEMS = [10, 20, 40];                 // 난이도(★ / ★★ / ★★★)별 보상 보석
+const MISSION_GEMS = [10, 20, 40, 100];                 // 난이도(★ / ★★ / ★★★)별 보상 보석
 const RANGED = ['archer', 'launcher', 'witch', 'mage', 'flower'], MELEE = ['knight', 'titan', 'assassin', 'arma'];
 const only = (c, list) => { const ks = Object.keys(c.st.summoned); return ks.length > 0 && ks.every(k => list.includes(k)); };
 const kl = (c, k) => c.st.kills[k] || 0, sm = (c, k) => c.st.summoned[k] || 0;
 const total = o => Object.values(o).reduce((t, v) => t + v, 0);
 // req = 필요한 캐릭터, need = 추가 조건, ok = 한 판 안에서 달성 여부, type 'streak' = 연승, type 'sum' = 여러 판 합산
 const MISSIONS = [
-  { id: 'win1', lv: 1, txt: '전투에서 승리하기', ok: c => c.win },
+  { id: 'wins2', lv: 1, type: 'sum', target: 2, txt: '승리 2번 하기 (여러 판 합산)', val: c => c.win ? 1 : 0 },
   { id: 'prep0', lv: 1, txt: '준비 시간에 코인을 하나도 남기지 않고 모두 쓰기', ok: c => c.st.prepLeft === 0 },
-  { id: 'reinf5', lv: 1, txt: '전투 중에 지원군을 5번 이상 소환하기', ok: c => c.st.battleSummons >= 5 },
+  { id: 'reinf5', lv: 1, txt: '전투 중에 지원군을 8번 이상 소환하기', ok: c => c.st.battleSummons >= 8 },
   { id: 'mix4', lv: 1, txt: '준비 시간에 서로 다른 캐릭터 4종 이상 배치하기', need: o => o.length >= 4, ok: c => Object.keys(c.st.prepTypes).length >= 4 },
-  { id: 'archer3', lv: 1, txt: '궁수를 3명 이상 소환하기', req: ['archer'], ok: c => sm(c, 'archer') >= 3 },
-  { id: 'chick2', lv: 1, txt: '런치킨을 2마리 이상 소환하고 승리하기', req: ['chicken'], ok: c => c.win && sm(c, 'chicken') >= 2 },
-  { id: 'launch1', lv: 1, txt: '페인트런처를 소환하고 승리하기', req: ['launcher'], ok: c => c.win && sm(c, 'launcher') >= 1 },
-  { id: 'kill10', lv: 1, txt: '한 판에 적을 10명 이상 처치하기', ok: c => c.st.killsTotal >= 10 },
+  { id: 'archer3', lv: 1, txt: '궁수를 5명 이상 소환하기', req: ['archer'], ok: c => sm(c, 'archer') >= 5 },
+  { id: 'chick2', lv: 1, txt: '런치킨을 3마리 이상 소환하고 승리하기', req: ['chicken'], ok: c => c.win && sm(c, 'chicken') >= 3 },
+  { id: 'launch1', lv: 1, txt: '페인트런처를 2대 이상 소환하고 승리하기', req: ['launcher'], ok: c => c.win && sm(c, 'launcher') >= 2 },
+  { id: 'kill10', lv: 1, txt: '한 판에 적을 15명 이상 처치하기', ok: c => c.st.killsTotal >= 15 },
 
   { id: 'knightOnly', lv: 2, txt: '기사만 써서 승리하기', req: ['knight'], ok: c => c.win && only(c, ['knight']) },
   { id: 'chickLive', lv: 2, txt: '런치킨이 처음부터 끝까지 죽지 않게 하기', req: ['chicken'], ok: c => !!c.st.prepTypes.chicken && !c.st.deaths.chicken },
@@ -1736,11 +1763,11 @@ const MISSIONS = [
   { id: 'big', lv: 2, txt: '점유율 차이 30% 이상으로 승리하기', ok: c => c.win && c.d >= .3 },
 
   { id: 'streak5', lv: 3, type: 'streak', target: 5, txt: '5연승 하기' },
-  { id: 'wipe', lv: 3, txt: '게임이 끝났을 때 적이 한 명도 남지 않게 하기', ok: c => c.enemyAlive === 0 && c.st.killsTotal >= 3 },
-  { id: 'noLoss', lv: 3, txt: '내 캐릭터를 하나도 잃지 않고 승리하기', ok: c => c.win && total(c.st.deaths) === 0 && total(c.st.summoned) >= 5 },
+  { id: 'wipe', lv: 4, txt: '게임이 끝났을 때 적이 한 명도 남지 않게 하기', ok: c => c.enemyAlive === 0 && c.st.killsTotal >= 3 },
+  { id: 'noLoss', lv: 4, txt: '내 캐릭터를 하나도 잃지 않고 승리하기', ok: c => c.win && total(c.st.deaths) === 0 && total(c.st.summoned) >= 5 },
   { id: 'rangedOnly', lv: 3, txt: '원거리 캐릭터(궁수·페인트런처·마녀·마법사·꽃순이)만 써서 승리하기', need: o => RANGED.filter(k => o.includes(k)).length >= 2, ok: c => c.win && only(c, RANGED) },
   { id: 'meleeOnly', lv: 3, txt: '근접 캐릭터(기사·타이탄·암살자·아르마딜로)만 써서 승리하기', need: o => MELEE.filter(k => o.includes(k)).length >= 2, ok: c => c.win && only(c, MELEE) },
-  { id: 'crush', lv: 3, txt: '점유율 차이 50% 이상으로 압승하기', ok: c => c.win && c.d >= .5 },
+  { id: 'crush', lv: 4, txt: '점유율 차이 50% 이상으로 압승하기', ok: c => c.win && c.d >= .5 },
   { id: 'mix6', lv: 3, txt: '한 판에 서로 다른 캐릭터 6종 이상 소환하기', need: o => o.length >= 6, ok: c => Object.keys(c.st.summoned).length >= 6 },
   { id: 'kill25', lv: 3, txt: '한 판에 적을 25명 이상 처치하기', ok: c => c.st.killsTotal >= 25 }
 ];
@@ -1792,7 +1819,7 @@ function buildMissions() {
     const row = document.createElement('div'); row.className = 'mrow';
     row.innerHTML = `<div class="mt"><b>${def.txt}</b><span>${'★'.repeat(def.lv)} · 💎 ${MISSION_GEMS[def.lv - 1]}${def.target ? ` · 진행 ${m.prog || 0}/${def.target}` : ''}</span></div>`;
     const b = document.createElement('button'), used = m.rr === todayStr();
-    b.className = 'mre'; b.textContent = used ? '🔄 내일 가능' : '🔄 바꾸기'; b.disabled = used;
+    b.className = 'mre'; b.textContent = used ? '🔄 오늘은 사용함 (내일 초기화)' : '🔄 바꾸기'; b.disabled = used;
     b.onclick = () => rerollMission(i);
     row.appendChild(b); box.appendChild(row);
   });
@@ -1800,6 +1827,100 @@ function buildMissions() {
 fillMissions();
 $('bMis').onclick = () => { buildMissions(); show('missions'); };
 $('mback').onclick = () => show('home');
+
+/* ====================================================
+   캐릭터 그림(이모지 대신) / 배경음악 / 설정 / 백업
+   ==================================================== */
+function drawUnitBig(g, type, x, y, sc) {          // 인게임 캐릭터 모습을 다른 캔버스(g)에 크게/작게 그리기
+  const d = CFG.UNITS[type]; if (!d) return;
+  const old = ctx, k = 12 / Math.max(12, d.r);
+  ctx = g; g.save(); g.translate(x, y); g.scale(sc * k, sc * k);
+  try { drawUnit({ team: 1, type, d, x: 0, y: 0, hp: d.hp, max: d.hp, shield: 0, inv: 0, hit: 0, stun: 0, rs: 'walk', spray: false, nobar: true, seed: 1, face: -.3 }); }
+  finally { g.restore(); ctx = old; }
+}
+function mkIcon(type, px) {                        // 버튼/카드에 넣는 작은 캐릭터 그림
+  const c = document.createElement('canvas'), n = px * 2;
+  c.width = c.height = n; c.style.width = c.style.height = px + 'px';
+  drawUnitBig(c.getContext('2d'), type, n / 2, n / 2 + n * .06, n / 46);
+  return c;
+}
+
+// 배경음악 파일: 저장소의 audio 폴더에 이 이름으로 넣어주세요 (없으면 소리 없이 조용히 넘어가요)
+const BGM = { home: 'audio/main.mp3', prep: 'audio/prep.mp3', battle: 'audio/battle.mp3' };
+const SND = { music: true, vol: .6 };
+try { Object.assign(SND, JSON.parse(localStorage.getItem('pk_snd') || '{}')); } catch (e) {}
+if (!(SND.vol >= 0 && SND.vol <= 1)) SND.vol = .6;
+const saveSnd = () => store('pk_snd', JSON.stringify(SND));
+const IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const bgm = {}; let bgmWant = 'home', audioOn = false, actx = null;
+for (const k in BGM) {
+  const a = new Audio(BGM[k]); a.loop = true; a.preload = 'metadata'; a.volume = 0;
+  const t = { a, v: 0, bad: false, gain: null };
+  a.addEventListener('error', () => { t.bad = true; });
+  bgm[k] = t;
+}
+function unlockAudio() {                           // 브라우저 규칙: 첫 터치 뒤에야 소리를 낼 수 있어요
+  if (audioOn) return; audioOn = true;
+  if (IS_IOS) {                                    // 아이폰은 audio.volume이 안 먹어서 WebAudio로 볼륨 조절
+    try {
+      actx = new (window.AudioContext || window.webkitAudioContext)();
+      for (const k in bgm) { const t = bgm[k]; t.gain = actx.createGain(); t.gain.gain.value = 0; actx.createMediaElementSource(t.a).connect(t.gain); t.gain.connect(actx.destination); }
+      actx.resume();
+    } catch (e) { for (const k in bgm) bgm[k].gain = null; }
+  }
+  for (const k in bgm) { const t = bgm[k]; t.a.play().then(() => { if (!(t.v > .001)) t.a.pause(); }).catch(() => {}); }
+}
+['pointerdown', 'keydown', 'touchend'].forEach(ev => document.addEventListener(ev, unlockAudio, { passive: true }));
+
+function bgmTick(dt) {                             // 화면에 맞는 곡으로 부드럽게 바꿔요 (메인 / 전투 전 / 전투 중)
+  bgmWant = screen === 'game' ? (S.phase === 'prep' ? 'prep' : S.phase === 'battle' ? 'battle' : 'home') : 'home';
+  for (const k in bgm) {
+    const t = bgm[k]; if (t.bad) continue;
+    const goal = (audioOn && SND.music && bgmWant === k && !document.hidden) ? SND.vol : 0;
+    t.v += Math.sign(goal - t.v) * Math.min(Math.abs(goal - t.v), dt * 1.2);
+    if (t.gain) t.gain.gain.value = t.v; else t.a.volume = Math.max(0, Math.min(1, t.v));
+    if (t.v > .001 && t.a.paused) t.a.play().catch(() => {});
+    else if (t.v <= .001 && goal === 0 && !t.a.paused) t.a.pause();
+  }
+}
+
+function renderSnd() {
+  $('sMusic').textContent = SND.music ? '🔊 배경음악 켜짐' : '🔇 배경음악 꺼짐';
+  $('hMute').textContent = SND.music ? '🔊' : '🔇';
+  $('sVol').value = Math.round(SND.vol * 100); $('sVolN').textContent = Math.round(SND.vol * 100);
+  const bad = Object.keys(BGM).filter(k => bgm[k].bad).map(k => BGM[k]);
+  $('sNote').textContent = bad.length ? `⚠ 찾지 못한 파일: ${bad.join(', ')}` : `음악 파일: ${Object.values(BGM).join(' · ')}`;
+}
+function toggleMusic() { SND.music = !SND.music; saveSnd(); renderSnd(); }
+$('sMusic').onclick = toggleMusic;
+$('hMute').onclick = toggleMusic;
+$('sVol').oninput = e => { SND.vol = e.target.value / 100; saveSnd(); renderSnd(); };
+$('bSet').onclick = () => { renderSnd(); $('bk').value = ''; $('bkHint').textContent = ''; show('settings'); };
+$('sdone2').onclick = () => show('home');
+renderSnd();
+
+function bkHint(t) { $('bkHint').textContent = t; }
+$('bkOut').onclick = () => {                       // 저장 데이터를 글자 한 줄(백업 코드)로 만들어요
+  const data = { v: 1, save: SAVE, nick: NICK, color: myColor, colors: UNLOCKED, sel: SEL };
+  const bytes = new TextEncoder().encode(JSON.stringify(data)); let bin = '';
+  bytes.forEach(b => { bin += String.fromCharCode(b); });
+  const code = btoa(bin);
+  $('bk').value = code; $('bk').select();
+  bkHint('백업 코드를 만들었어요. 전체를 복사해서 메모장이나 메신저에 보관하세요');
+  try { if (navigator.clipboard) navigator.clipboard.writeText(code).then(() => bkHint('복사했어요! 메모장이나 메신저에 붙여넣어 보관하세요')).catch(() => {}); } catch (e) {}
+};
+$('bkIn').onclick = () => {
+  const code = $('bk').value.trim();
+  if (!code) { bkHint('붙여넣은 코드가 없어요'); return; }
+  try {
+    const bytes = Uint8Array.from(atob(code), c => c.charCodeAt(0)), d = JSON.parse(new TextDecoder().decode(bytes));
+    if (!d || d.v !== 1 || !d.save || typeof d.save !== 'object') throw new Error('bad');
+    if (!confirm('지금 저장된 데이터가 백업 데이터로 바뀌어요. 계속할까요?')) return;
+    store('pk_save', JSON.stringify(d.save)); store('pk_nick', d.nick || ''); store('pk_color', d.color || '');
+    store('pk_colors', JSON.stringify(d.colors || [])); store('pk_sel', JSON.stringify(d.sel || []));
+    location.reload();
+  } catch (e) { bkHint('올바른 백업 코드가 아니에요'); }
+};
 
 function fit() {
   const s = Math.min(innerWidth / 360, innerHeight / 770);
@@ -1809,7 +1930,7 @@ function fit() {
 addEventListener('resize', fit);
 
 function loop(ts) {
-  const dt = Math.min(.05, (ts - last) / 1000 || 0); last = ts; clock = ts / 1000; if (animColor) applyColors();
+  const dt = Math.min(.05, (ts - last) / 1000 || 0); last = ts; clock = ts / 1000; if (animColor) applyColors(); bgmTick(dt);
   if (screen === 'game') { if (S.phase !== 'over') update(dt); draw(); ui(); }
   else if (screen === 'home') drawHome();
   else if (screen === 'palette') drawPal();
